@@ -1,0 +1,92 @@
+<resources>
+    <string name="app_name">Smart Cost Pro</string>
+    <string name="app_name_ar">سمارت كوست برو</string>
+    <string name="app_tagline">الإدارة المالية الذكية والمصروفات</string>
+    
+    <!-- Auth & Workspace -->
+    <string name="login_title">تسجيل الدخول</string>
+    <string name="login_subtitle">مرحبًا بك مجددًا في سمارت كوست برو</string>
+    <string name="email_label">البريد الإلكتروني</string>
+    <string name="password_label">كلمة المرور</string>
+    <string name="forgot_password">نسيت كلمة المرور؟</string>
+    <string name="dont_have_account">ليس لديك حساب؟ إنشاء حساب جديد</string>
+    <string name="already_have_account">لديك حساب بالفعل؟ تسجيل الدخول</string>
+    <string name="create_account_title">إنشاء حساب جديد</string>
+    <string name="confirm_password_label">تأكيد كلمة المرور</string>
+    <string name="full_name_label">الاسم الكامل</string>
+    <string name="enter_local_workspace">الدخول إلى مساحة العمل المحلية</string>
+    <string name="local_workspace_desc">تخزين آمن ومحلي 100٪ على جهازك دون اتصال</string>
+    <string name="auth_note_offline">يعمل التطبيق بكامل وظائفه المالية محليًا على هذا الجهاز دون الحاجة لإنترنت أو خوادم خارجية.</string>
+    
+    <!-- Dashboard -->
+    <string name="nav_dashboard">الرئيسية</string>
+    <string name="nav_expenses">المصروفات</string>
+    <string name="nav_vehicles">المركبات</string>
+    <string name="nav_revenues">الإيرادات</string>
+    <string name="nav_reports">التقارير</string>
+    
+    <string name="dashboard_total_expenses">إجمالي المصروفات</string>
+    <string name="dashboard_total_revenues">إجمالي الإيرادات</string>
+    <string name="dashboard_net_balance">صافي الفارق</string>
+    <string name="dashboard_monthly_summary">ملخص الشهر</string>
+    <string name="dashboard_recent_transactions">أحدث العمليات المسجلة</string>
+    <string name="dashboard_quick_actions">إجراءات سريعة</string>
+    <string name="dashboard_add_expense">إضافة مصروف</string>
+    <string name="dashboard_add_revenue">إضافة إيراد</string>
+    <string name="dashboard_add_fuel_maintenance">وقود / صيانة</string>
+    <string name="dashboard_view_all">عرض الكل</string>
+    <string name="dashboard_empty_recent">لا توجد عمليات مسجلة لهذا الشهر حتى الآن</string>
+    
+    <!-- Expense Categories / Departments -->
+    <string name="dept_personal">المصروفات الشخصية</string>
+    <string name="dept_home">مصروفات المنزل</string>
+    <string name="dept_education">مصروفات التعليم</string>
+    <string name="dept_work">مصروفات العمل</string>
+    <string name="dept_vehicles">مصروفات المركبات</string>
+    <string name="dept_vehicle_revenues">إيرادات المركبات</string>
+    <string name="dept_fuel_maintenance">الوقود والصيانة</string>
+    <string name="dept_revenues_certificates">الإيرادات والشهادات</string>
+    <string name="dept_reports">التقارير المالية</string>
+    
+    <!-- Transactions & Actions -->
+    <string name="action_add">إضافة</string>
+    <string name="action_edit">تعديل</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_save">حفظ</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_confirm">تأكيد</string>
+    <string name="action_filter">تصفية</string>
+    <string name="action_search">بحث...</string>
+    <string name="action_sort_date">الترتيب بالتاريخ</string>
+    <string name="action_sort_amount">الترتيب بالمبلغ</string>
+    <string name="action_delete_confirm_title">تأكيد الحذف</string>
+    <string name="action_delete_confirm_msg">هل أنت متأكد من رغبتك في حذف هذا السجل بشكل نهائي؟</string>
+    
+    <!-- Form Labels -->
+    <string name="label_amount">المبلغ</string>
+    <string name="label_currency">ج.م</string>
+    <string name="label_date">التاريخ</string>
+    <string name="label_title">العنوان / الوصف</string>
+    <string name="label_category">التصنيف</string>
+    <string name="label_notes">ملاحظات إضافية</string>
+    <string name="label_vehicle_select">اختر المركبة</string>
+    <string name="label_liters">كمية الوقود (لتر)</string>
+    <string name="label_odometer">قراءة العداد (كم)</string>
+    <string name="label_service_type">نوع الصيانة / الخدمة</string>
+    <string name="label_service_center">مركز الخدمة / الورشة</string>
+    <string name="label_student_name">اسم الطالب / المتدرب</string>
+    <string name="label_institution">المدرسة / الجامعة / المعهد</string>
+    <string name="label_academic_term">الفصل الدراسي / المرحلة</string>
+    <string name="label_work_project">المشروع / العميل</string>
+    <string name="label_is_tax_deductible">خاضع للخصم الضريبي</string>
+    <string name="label_certificate_name">اسم الشهادة / الوديعة</string>
+    <string name="label_bank_name">البنك / الجهة المالية</string>
+    <string name="label_interest_rate">نسبة العائد (%)</string>
+    <string name="label_payout_cycle">دورية صرف العائد</string>
+    <string name="label_maturity_date">تاريخ الاستحقاق</string>
+    
+    <!-- Validation Errors -->
+    <string name="error_invalid_amount">يرجى إدخال مبلغ صحيح أكبر من الصفر</string>
+    <string name="error_required_field">هذا الحقل مطلوب</string>
+    <string name="error_select_vehicle">يرجى اختيار مركبة</string>
+</resources>
