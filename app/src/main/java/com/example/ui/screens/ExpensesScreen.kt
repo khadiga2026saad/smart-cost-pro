@@ -105,11 +105,12 @@ fun ExpensesScreen(
 
     val departmentsList = listOf(
         Pair("ALL", "الكل"),
-        Pair("PERSONAL", Department.PERSONAL.titleAr),
         Pair("HOME", Department.HOME.titleAr),
-        Pair("EDUCATION", Department.EDUCATION.titleAr),
+        Pair("MEDICAL", Department.MEDICAL.titleAr),
+        Pair("PERSONAL", Department.PERSONAL.titleAr),
         Pair("WORK", Department.WORK.titleAr),
-        Pair("VEHICLE", Department.VEHICLE.titleAr)
+        Pair("EDUCATION", Department.EDUCATION.titleAr),
+        Pair("VEHICLES", Department.VEHICLES.titleAr)
     )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -207,9 +208,7 @@ fun ExpensesScreen(
 
             // Summary of filtered expenses count & total
             item {
-                val totalFilteredAmount = expenses.fold(MoneyUtils.ZERO) { acc, exp ->
-                    MoneyUtils.add(acc, MoneyUtils.parseBigDecimalAllowZero(exp.amount))
-                }
+                val totalFilteredPiastres = expenses.sumOf { it.amountPiastres }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -220,7 +219,7 @@ fun ExpensesScreen(
                         style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                     Text(
-                        text = "المجموع: ${MoneyUtils.format(totalFilteredAmount)}",
+                        text = "المجموع: ${MoneyUtils.formatPiastres(totalFilteredPiastres)}",
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = FinancialRed
@@ -365,7 +364,8 @@ private fun ExpenseDetailCard(
                     val icon = when (dept) {
                         Department.EDUCATION -> Icons.Default.School
                         Department.WORK -> Icons.Default.Work
-                        Department.VEHICLE -> Icons.Default.DirectionsCar
+                        Department.VEHICLE, Department.VEHICLES -> Icons.Default.DirectionsCar
+                        Department.MEDICAL -> Icons.Default.ReceiptLong
                         else -> Icons.Default.ReceiptLong
                     }
                     Box(
@@ -396,7 +396,7 @@ private fun ExpenseDetailCard(
                 }
 
                 Text(
-                    text = "- " + MoneyUtils.format(MoneyUtils.parseBigDecimalAllowZero(expense.amount)),
+                    text = "- " + MoneyUtils.formatPiastres(expense.amountPiastres),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.ExtraBold,
                         color = FinancialRed
@@ -409,7 +409,7 @@ private fun ExpenseDetailCard(
                 expense.institution != null ||
                 expense.projectName != null ||
                 expense.isTaxDeductible ||
-                expense.notes.isNotBlank()
+                (!expense.notes.isNullOrBlank())
 
             if (hasExtraInfo) {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -424,7 +424,7 @@ private fun ExpenseDetailCard(
                             Text("الطالب: ${expense.studentName}", style = MaterialTheme.typography.bodySmall)
                         }
                         if (!expense.institution.isNullOrBlank()) {
-                            Text("المؤسسة: ${expense.institution} ${expense.academicTerm?.let { "($it)" } ?: ""}", style = MaterialTheme.typography.bodySmall)
+                            Text("المؤسسة: ${expense.institution}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     if (expense.department == Department.WORK.id) {
@@ -435,7 +435,7 @@ private fun ExpenseDetailCard(
                             Text("✓ خاضع للخصم الضريبي", style = MaterialTheme.typography.bodySmall.copy(color = GoldDark, fontWeight = FontWeight.Bold))
                         }
                     }
-                    if (expense.notes.isNotBlank()) {
+                    if (!expense.notes.isNullOrBlank()) {
                         Text("ملاحظات: ${expense.notes}", style = MaterialTheme.typography.bodySmall.copy(color = Color.DarkGray))
                     }
                 }
@@ -728,7 +728,7 @@ private fun ExpenseFormDialog(
                             category = selectedCategory,
                             title = title.trim(),
                             notes = notes.trim(),
-                            vehicleId = if (selectedDept == Department.VEHICLE) selectedVehicleId else null,
+                            vehicleId = if (selectedDept == Department.VEHICLE || selectedDept == Department.VEHICLES) selectedVehicleId else null,
                             studentName = studentName.takeIf { it.isNotBlank() },
                             institution = institution.takeIf { it.isNotBlank() },
                             academicTerm = academicTerm.takeIf { it.isNotBlank() },

@@ -15,6 +15,8 @@ object DateUtils {
         "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
     )
 
+    val arabicMonthNames: List<String> get() = ARABIC_MONTHS
+
     fun getMonthName(monthNumber: Int): String {
         return if (monthNumber in 1..12) ARABIC_MONTHS[monthNumber - 1] else ""
     }
@@ -51,6 +53,8 @@ object DateUtils {
         val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.US)
         return localDate.format(formatter)
     }
+
+    fun formatDate(epochMillis: Long): String = formatDateShort(epochMillis)
 
     fun formatYearMonthArabic(year: Int, month: Int): String {
         val monthName = getMonthName(month)

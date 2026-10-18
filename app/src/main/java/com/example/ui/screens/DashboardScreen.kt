@@ -328,6 +328,7 @@ fun DashboardScreen(
                             TransactionType.EXPENSE -> onNavigateToExpenses()
                             TransactionType.REVENUE -> onNavigateToRevenues()
                             TransactionType.VEHICLE_LOG -> onNavigateToVehicles()
+                            else -> onNavigateToExpenses()
                         }
                     },
                     onDelete = {
@@ -358,7 +359,7 @@ fun DashboardScreen(
                         when (tx.type) {
                             TransactionType.EXPENSE -> viewModel.deleteExpense(tx.id)
                             TransactionType.REVENUE -> viewModel.deleteRevenue(tx.id)
-                            TransactionType.VEHICLE_LOG -> viewModel.deleteVehicleLog(tx.id)
+                            else -> viewModel.deleteExpense(tx.id)
                         }
                         transactionToDelete = null
                     },

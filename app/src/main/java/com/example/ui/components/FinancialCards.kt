@@ -249,7 +249,8 @@ fun DepartmentProgressRow(
                 Department.HOME -> BlackPrimary
                 Department.EDUCATION -> Color(0xFF1E88E5)
                 Department.WORK -> Color(0xFF8E24AA)
-                Department.VEHICLE -> Color(0xFFFB8C00)
+                Department.VEHICLE, Department.VEHICLES -> Color(0xFFFB8C00)
+                Department.MEDICAL -> Color(0xFFE53935)
             },
             trackColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -285,7 +286,7 @@ fun TransactionRowCard(
                 isVehicleLog -> if (transaction.logType == "FUEL") Icons.Default.LocalGasStation else Icons.Default.DirectionsCar
                 transaction.department == Department.EDUCATION -> Icons.Default.School
                 transaction.department == Department.WORK -> Icons.Default.Work
-                transaction.department == Department.VEHICLE -> Icons.Default.DirectionsCar
+                transaction.department == Department.VEHICLE || transaction.department == Department.VEHICLES -> Icons.Default.DirectionsCar
                 else -> Icons.Default.ArrowUpward
             }
 

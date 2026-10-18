@@ -6,38 +6,65 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.core.DateUtils
+import com.example.core.MoneyUtils
 import com.example.data.local.dao.CertificateDao
+import com.example.data.local.dao.CurrentAccountDao
 import com.example.data.local.dao.ExpenseDao
+import com.example.data.local.dao.GamaeyaDao
 import com.example.data.local.dao.RevenueDao
+import com.example.data.local.dao.StudentDao
+import com.example.data.local.dao.TreasuryMovementDao
 import com.example.data.local.dao.VehicleDao
 import com.example.data.local.dao.VehicleLogDao
+import com.example.data.local.entities.CertificatePayoutScheduleEntity
+import com.example.data.local.entities.CurrentAccountEntity
 import com.example.data.local.entities.ExpenseEntity
 import com.example.data.local.entities.FinancialCertificateEntity
+import com.example.data.local.entities.GamaeyaEntity
+import com.example.data.local.entities.GamaeyaInstallmentEntity
 import com.example.data.local.entities.RevenueEntity
+import com.example.data.local.entities.StudentEntity
+import com.example.data.local.entities.TreasuryMovementEntity
+import com.example.data.local.entities.VehicleAccidentLogEntity
 import com.example.data.local.entities.VehicleEntity
-import com.example.data.local.entities.VehicleLogEntity
+import com.example.data.local.entities.VehicleFuelLogEntity
+import com.example.data.local.entities.VehicleMaintenanceLogEntity
+import com.example.data.local.entities.VehicleOilLogEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
     entities = [
-        ExpenseEntity::class,
-        RevenueEntity::class,
+        CurrentAccountEntity::class,
+        StudentEntity::class,
         VehicleEntity::class,
-        VehicleLogEntity::class,
-        FinancialCertificateEntity::class
+        ExpenseEntity::class,
+        VehicleFuelLogEntity::class,
+        VehicleMaintenanceLogEntity::class,
+        VehicleOilLogEntity::class,
+        VehicleAccidentLogEntity::class,
+        GamaeyaEntity::class,
+        GamaeyaInstallmentEntity::class,
+        FinancialCertificateEntity::class,
+        CertificatePayoutScheduleEntity::class,
+        RevenueEntity::class,
+        TreasuryMovementEntity::class
     ],
     version = 1,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun expenseDao(): ExpenseDao
-    abstract fun revenueDao(): RevenueDao
+    abstract fun currentAccountDao(): CurrentAccountDao
+    abstract fun studentDao(): StudentDao
     abstract fun vehicleDao(): VehicleDao
     abstract fun vehicleLogDao(): VehicleLogDao
+    abstract fun expenseDao(): ExpenseDao
+    abstract fun revenueDao(): RevenueDao
+    abstract fun gamaeyaDao(): GamaeyaDao
     abstract fun certificateDao(): CertificateDao
+    abstract fun treasuryMovementDao(): TreasuryMovementDao
 
     companion object {
         @Volatile
@@ -72,148 +99,220 @@ abstract class AppDatabase : RoomDatabase() {
             val now = DateUtils.currentEpochMillis()
             val dayMillis = 86_400_000L
 
-            // 1. Starter Vehicle
-            val vehicleId = database.vehicleDao().insertVehicle(
-                VehicleEntity(
-                    name = "تويوتا كورولا",
-                    plateNumber = "أ ب ج 4589",
-                    modelYear = "2023",
-                    initialOdometer = 35400,
-                    notes = "سيارة العمل والتنقل اليومي"
+            // 1. Initial Liquid Treasury (Opening Balance 25,000.00 EGP = 2,500,000 Piastres)
+            val initialBalancePiastres = 2_500_000L
+            database.currentAccountDao().insertOrUpdate(
+                CurrentAccountEntity(
+                    accountId = 1L,
+                    accountName = "الخزينة الرئيسية",
+                    currentBalancePiastres = initialBalancePiastres,
+                    openingBalancePiastres = initialBalancePiastres,
+                    lastReconciledAt = now
                 )
             )
 
-            // 2. Starter Expenses across specialized departments
+            // 2. Starter Students
+            val student1Id = database.studentDao().insertStudent(
+                StudentEntity(
+                    fullName = "أحمد محمد",
+                    academicStage = "المرحلة الابتدائية",
+                    schoolOrInstitution = "مدرسة النور الخاصة",
+                    academicYear = "2025/2026",
+                    monthlyBudgetPiastres = 250_000L // 2,500.00 EGP
+                )
+            )
+
+            val student2Id = database.studentDao().insertStudent(
+                StudentEntity(
+                    fullName = "سارة محمد",
+                    academicStage = "المرحلة الإعدادية",
+                    schoolOrInstitution = "مدرسة الأوائل الرسمية",
+                    academicYear = "2025/2026",
+                    monthlyBudgetPiastres = 200_000L // 2,000.00 EGP
+                )
+            )
+
+            // 3. Starter Vehicle
+            val vehicleId = database.vehicleDao().insertVehicle(
+                VehicleEntity(
+                    name = "تويوتا كورولا 2023",
+                    plateNumber = "أ ب ج 4589",
+                    initialOdometerKm = 35400L,
+                    currentOdometerKm = 35950L,
+                    fuelTankCapacityLiters = 50.0,
+                    oilChangeIntervalKm = 5000L,
+                    lastOilChangeKm = 35000L
+                )
+            )
+
+            // 4. Starter Certificate (100,000.00 EGP = 10,000,000 Piastres at 24.0% yield)
+            val certPrincipalPiastres = 10_000_000L
+            val certId = database.certificateDao().insertCertificate(
+                FinancialCertificateEntity(
+                    name = "شهادة القمة الثلاثية",
+                    bankName = "البنك الأهلي المصري",
+                    principalPiastres = certPrincipalPiastres,
+                    annualRatePercent = "24.00",
+                    payoutFrequency = "MONTHLY",
+                    durationYears = 3,
+                    issueDate = now - (dayMillis * 30),
+                    maturityDate = now + (dayMillis * 365 * 3)
+                )
+            )
+
+            // Certificate Schedule Generation (12 months * 3 = 36 cycles; monthly yield = 200,000 Piastres = 2,000.00 EGP)
+            val monthlyYieldPiastres = 200_000L
+            val schedules = (1..36).map { cycle ->
+                CertificatePayoutScheduleEntity(
+                    certificateId = certId,
+                    cycleNumber = cycle,
+                    expectedDueDate = now + (dayMillis * 30 * cycle),
+                    expectedAmountPiastres = monthlyYieldPiastres,
+                    payoutKey = "CERT_${certId}_CYC_${cycle}_${DateUtils.formatDate(now + (dayMillis * 30 * cycle))}"
+                )
+            }
+            database.certificateDao().insertSchedules(schedules)
+
+            // 5. Starter Gamaeya (Total 100,000.00 EGP = 10,000,000 Piastres, 10 members, turn 5)
+            val poolValuePiastres = 10_000_000L
+            val membersCount = 10
+            val monthlyInstallmentPiastres = 1_000_000L // 10,000.00 EGP
+            val gamaeyaId = database.gamaeyaDao().insertGamaeya(
+                GamaeyaEntity(
+                    name = "جمعية الزملاء 2026",
+                    totalPoolValuePiastres = poolValuePiastres,
+                    numberOfMembers = membersCount,
+                    monthlyInstallmentPiastres = monthlyInstallmentPiastres,
+                    myTurnOrder = 5,
+                    startDate = now - (dayMillis * 60),
+                    expectedPayoutDate = now + (dayMillis * 90)
+                )
+            )
+
+            // Generate installments using Penny Distribution Algorithm
+            val installmentAmounts = MoneyUtils.allocatePennyRemainder(
+                monthlyInstallmentPiastres * membersCount,
+                membersCount
+            )
+            val installments = installmentAmounts.mapIndexed { index, amt ->
+                val instNum = index + 1
+                val due = now - (dayMillis * 60) + (dayMillis * 30 * index)
+                val isAlreadyPaid = instNum <= 2
+                GamaeyaInstallmentEntity(
+                    gamaeyaId = gamaeyaId,
+                    installmentNumber = instNum,
+                    dueDate = due,
+                    paidDate = if (isAlreadyPaid) due else null,
+                    amountPiastres = amt,
+                    isPaid = isAlreadyPaid,
+                    idempotencyKey = "GAM_${gamaeyaId}_INST_$instNum"
+                )
+            }
+            database.gamaeyaDao().insertInstallments(installments)
+
+            // 6. Starter Expenses (all in Long piastres)
             val initialExpenses = listOf(
                 ExpenseEntity(
-                    amount = "1450.00",
+                    amountPiastres = 145_000L, // 1,450.00 EGP
                     date = now - (dayMillis * 1),
                     department = "HOME",
-                    category = "تموين ومستلزمات",
+                    subcategory = "تموين ومستلزمات",
                     title = "مشتريات غذائية شهرية",
                     notes = "سوبرماركت الهايبر"
                 ),
                 ExpenseEntity(
-                    amount = "650.00",
+                    amountPiastres = 65_000L, // 650.00 EGP
                     date = now - (dayMillis * 2),
                     department = "HOME",
-                    category = "فواتير ومرافق",
-                    title = "فاتورة الكهرباء والإنترنت",
-                    notes = "سداد إلكتروني"
+                    subcategory = "فواتير ومرافق",
+                    title = "فاتورة الكهرباء والغاز",
+                    notes = "سداد تطبيق فوري"
                 ),
                 ExpenseEntity(
-                    amount = "420.00",
+                    amountPiastres = 45_000L, // 450.00 EGP
                     date = now - (dayMillis * 3),
-                    department = "PERSONAL",
-                    category = "عناية شخصية",
-                    title = "مشتريات صيدلية وصحة",
-                    notes = "فيتامينات ومستلزمات"
+                    department = "MEDICAL",
+                    subcategory = "أدوية وصيدليات",
+                    title = "شراء أدوية وفيتامينات",
+                    notes = "صيدلية الحي"
                 ),
                 ExpenseEntity(
-                    amount = "3500.00",
+                    amountPiastres = 35_000L, // 350.00 EGP
+                    date = now - (dayMillis * 4),
+                    department = "PERSONAL",
+                    subcategory = "عناية ومظهر شخصي",
+                    title = "مستلزمات شخصية",
+                    notes = ""
+                ),
+                ExpenseEntity(
+                    amountPiastres = 85_000L, // 850.00 EGP
                     date = now - (dayMillis * 5),
                     department = "EDUCATION",
-                    category = "رسوم دراسية",
-                    title = "قسط الفصل الدراسي الأول",
-                    studentName = "أحمد محمد",
-                    institution = "مدرسة النور الدولية",
-                    academicTerm = "الصف الثالث الثانوي",
-                    notes = "إيصال رقم 8821"
+                    subcategory = "رسوم دراسية",
+                    title = "قسط اشتراك الباص والملازم",
+                    notes = "الفصل الدراسي الثاني",
+                    studentId = student1Id
                 ),
                 ExpenseEntity(
-                    amount = "850.00",
+                    amountPiastres = 50_000L, // 500.00 EGP
                     date = now - (dayMillis * 6),
                     department = "EDUCATION",
-                    category = "كتب ومراجع",
-                    title = "كتب خارجية وأدوات مدرسية",
-                    studentName = "سارة محمد",
-                    institution = "المدرسة التجريبية",
-                    academicTerm = "الإعدادية"
-                ),
-                ExpenseEntity(
-                    amount = "1200.00",
-                    date = now - (dayMillis * 7),
-                    department = "WORK",
-                    category = "معدات ومكتب",
-                    title = "اشتراك برمجيات وأدوات تصميم",
-                    projectName = "مشروع المنصة الرقمية",
-                    isTaxDeductible = true,
-                    notes = "فاتورة ضريبية معتمدة"
-                ),
-                ExpenseEntity(
-                    amount = "350.00",
-                    date = now - (dayMillis * 8),
-                    department = "VEHICLE",
-                    category = "غسيل ومواقف",
-                    title = "اشتراك موقف وغسيل شامل",
-                    vehicleId = vehicleId,
-                    notes = "موقف العمل الشهري"
+                    subcategory = "كتب وأدوات مدرسية",
+                    title = "كتب خارجية وأدوات رسم",
+                    notes = "مكتبة النهضة",
+                    studentId = student2Id
                 )
             )
-            database.expenseDao().insertExpenses(initialExpenses)
 
-            // 3. Vehicle Logs (Fuel & Maintenance)
-            val vehicleLogs = listOf(
-                VehicleLogEntity(
-                    vehicleId = vehicleId,
-                    logType = "FUEL",
-                    amount = "450.00",
+            for (expense in initialExpenses) {
+                database.expenseDao().insertExpense(expense)
+            }
+
+            // 7. Starter Vehicle Fuel with linked expense
+            val fuelCostPiastres = 42_000L // 420.00 EGP
+            val fuelExpenseId = database.expenseDao().insertExpense(
+                ExpenseEntity(
+                    amountPiastres = fuelCostPiastres,
                     date = now - (dayMillis * 2),
-                    odometer = 35850,
-                    liters = 40.0,
-                    notes = "بنزين 95 محطة الوطنية"
-                ),
-                VehicleLogEntity(
+                    department = "VEHICLES",
+                    subcategory = "وقود وتعبئات",
+                    title = "وقود 95 كامل - تويوتا كورولا",
+                    vehicleId = vehicleId
+                )
+            )
+
+            database.vehicleLogDao().insertFuelLog(
+                VehicleFuelLogEntity(
                     vehicleId = vehicleId,
-                    logType = "MAINTENANCE",
-                    amount = "1650.00",
+                    date = now - (dayMillis * 2),
+                    odometerKm = 35950L,
+                    quantityLiters = 35.0,
+                    pricePerLiterPiastres = 1_200L, // 12.00 EGP / L
+                    totalCostPiastres = fuelCostPiastres,
+                    isFullTank = true,
+                    stationName = "محطة وطنية",
+                    linkedExpenseId = fuelExpenseId
+                )
+            )
+
+            // 8. Starter Revenues (Salary + Freelance)
+            database.revenueDao().insertRevenue(
+                RevenueEntity(
+                    amountPiastres = 2_200_000L, // 22,000.00 EGP
                     date = now - (dayMillis * 10),
-                    odometer = 35000,
-                    serviceType = "تغيير زيت المحرك وفلتر أصلي",
-                    serviceCenter = "مركز تويوتا المعتمد",
-                    notes = "صيانة دورية 35 ألف كم"
+                    sourceType = "SALARY",
+                    title = "الراتب الشهري الأساسي",
+                    payerOrInstitution = "الشركة الدولية للحلول التقنية"
                 )
             )
-            database.vehicleLogDao().insertLogs(vehicleLogs)
 
-            // 4. Starter Revenues
-            val initialRevenues = listOf(
+            database.revenueDao().insertRevenue(
                 RevenueEntity(
-                    amount = "18500.00",
-                    date = now - (dayMillis * 12),
-                    category = "راتب شهري",
-                    title = "راتب وظيفة الهندسة",
-                    notes = "تحويل بنكي"
-                ),
-                RevenueEntity(
-                    amount = "4200.00",
+                    amountPiastres = 400_000L, // 4,000.00 EGP
                     date = now - (dayMillis * 4),
-                    category = "عمل حر واستشارات",
-                    title = "دفعة استشارة مالية لشركة الشروق",
-                    notes = "عقد استشاري"
-                ),
-                RevenueEntity(
-                    amount = "2100.00",
-                    date = now - (dayMillis * 3),
-                    category = "إيرادات مركبات",
-                    title = "إيراد تشغيل السيارة (نقل/توصيل)",
-                    vehicleId = vehicleId,
-                    notes = "إيراد رحلات الأسبوع"
-                )
-            )
-            database.revenueDao().insertRevenues(initialRevenues)
-
-            // 5. Financial Certificate
-            database.certificateDao().insertCertificate(
-                FinancialCertificateEntity(
-                    name = "شهادة القمة البلاتينية",
-                    bankName = "البنك الأهلي",
-                    principalAmount = "100000.00",
-                    annualInterestRate = 23.5,
-                    payoutFrequency = "شهري",
-                    issueDate = now - (dayMillis * 60),
-                    maturityDate = now + (dayMillis * 300),
-                    notes = "عائد شهري يصرف في الحساب الجاري"
+                    sourceType = "ADDITIONAL_FREELANCE",
+                    title = "مشروع استشاري تقني مستقل",
+                    payerOrInstitution = "مكتب المستشار الهندسي"
                 )
             )
         }

@@ -8,9 +8,12 @@ import com.example.core.DateUtils
 import com.example.core.MoneyUtils
 import com.example.data.local.entities.ExpenseEntity
 import com.example.data.local.entities.FinancialCertificateEntity
+import com.example.data.local.entities.GamaeyaEntity
 import com.example.data.local.entities.RevenueEntity
+import com.example.data.local.entities.StudentEntity
 import com.example.data.local.entities.VehicleEntity
-import com.example.data.local.entities.VehicleLogEntity
+import com.example.data.local.entities.VehicleFuelLogEntity
+import com.example.data.local.entities.VehicleMaintenanceLogEntity
 import com.example.data.repository.FinanceRepository
 import com.example.domain.model.FinancialSummary
 import com.example.domain.model.MonthlyReportItem
@@ -55,24 +58,25 @@ class FinanceViewModel(
         val end = DateUtils.getMonthEndEpoch(filter.year, filter.month)
 
         combine(
+            repository.getAccountFlow(),
             repository.getExpensesBetween(start, end),
             repository.getRevenuesBetween(start, end),
-            repository.getVehicleLogsBetween(start, end)
-        ) { expenses, revenues, logs ->
-            calculationUseCase.calculateSummary(expenses, revenues, logs)
+            repository.getFuelLogsBetween(start, end),
+            repository.getMaintenanceLogsBetween(start, end)
+        ) { account, expenses, revenues, fuelLogs, maintLogs ->
+            val balance = account?.currentBalancePiastres ?: 0L
+            calculationUseCase.calculateSummary(
+                currentBalancePiastres = balance,
+                expenses = expenses,
+                revenues = revenues,
+                fuelLogs = fuelLogs,
+                maintenanceLogs = maintLogs
+            )
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = FinancialSummary(
-            totalExpenses = MoneyUtils.ZERO,
-            totalRevenues = MoneyUtils.ZERO,
-            netBalance = MoneyUtils.ZERO,
-            departmentSummaries = emptyList(),
-            recentTransactions = emptyList(),
-            fuelTotal = MoneyUtils.ZERO,
-            maintenanceTotal = MoneyUtils.ZERO
-        )
+        initialValue = FinancialSummary()
     )
 
     // All expenses for current month with search and department filtering applied
@@ -97,15 +101,13 @@ class FinanceViewModel(
             val q = query.trim().lowercase()
             result = result.filter {
                 it.title.lowercase().contains(q) ||
-                    it.category.lowercase().contains(q) ||
-                    it.notes.lowercase().contains(q) ||
-                    (it.studentName?.lowercase()?.contains(q) == true) ||
-                    (it.projectName?.lowercase()?.contains(q) == true)
+                    it.subcategory.lowercase().contains(q) ||
+                    (it.notes?.lowercase()?.contains(q) == true)
             }
         }
 
         if (sortAmount) {
-            result.sortedByDescending { MoneyUtils.parseBigDecimalAllowZero(it.amount) }
+            result.sortedByDescending { it.amountPiastres }
         } else {
             result.sortedByDescending { it.date }
         }
@@ -135,25 +137,55 @@ class FinanceViewModel(
             initialValue = emptyList()
         )
 
-    val allVehicleLogs: StateFlow<List<VehicleLogEntity>> = repository.getAllVehicleLogs()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    val allVehicleLogs: StateFlow<List<com.example.domain.model.VehicleLogItem>> = combine(
+        repository.getFuelLogsBetween(0L, Long.MAX_VALUE),
+        repository.getMaintenanceLogsBetween(0L, Long.MAX_VALUE)
+    ) { fuelLogs, maintLogs ->
+        val fuelItems = fuelLogs.map {
+            com.example.domain.model.VehicleLogItem(
+                id = it.fuelLogId,
+                vehicleId = it.vehicleId,
+                logType = "FUEL",
+                amount = MoneyUtils.formatPiastresPlain(it.totalCostPiastres),
+                date = it.date,
+                odometer = it.odometerKm.toInt(),
+                liters = it.quantityLiters,
+                notes = it.stationName ?: ""
+            )
+        }
+        val maintItems = maintLogs.map {
+            com.example.domain.model.VehicleLogItem(
+                id = it.maintenanceLogId,
+                vehicleId = it.vehicleId,
+                logType = "MAINTENANCE",
+                amount = MoneyUtils.formatPiastresPlain(it.totalCostPiastres),
+                date = it.date,
+                odometer = it.odometerKm.toInt(),
+                serviceType = it.maintenanceType,
+                serviceCenter = it.serviceCenter,
+                notes = it.description
+            )
+        }
+        (fuelItems + maintItems).sortedByDescending { it.date }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // Vehicle Summaries per vehicle
     val vehicleSummaries: StateFlow<List<VehicleSummary>> = combine(
         repository.getAllVehicles(),
-        repository.getAllExpenses(),
-        repository.getAllVehicleLogs(),
-        repository.getAllRevenues()
-    ) { vehicles, expenses, logs, revenues ->
+        repository.getAllExpenses()
+    ) { vehicles, expenses ->
         vehicles.map { vehicle ->
-            val vExpenses = expenses.filter { it.vehicleId == vehicle.id }
-            val vLogs = logs.filter { it.vehicleId == vehicle.id }
-            val vRevenues = revenues.filter { it.vehicleId == vehicle.id }
-            calculationUseCase.calculateVehicleSummary(vehicle, vExpenses, vLogs, vRevenues)
+            val vExpenses = expenses.filter { it.vehicleId == vehicle.vehicleId }
+            calculationUseCase.calculateVehicleSummary(
+                vehicle = vehicle,
+                expenses = vExpenses,
+                fuelLogs = emptyList(),
+                maintenanceLogs = emptyList()
+            )
         }
     }.stateIn(
         scope = viewModelScope,
@@ -169,13 +201,42 @@ class FinanceViewModel(
             initialValue = emptyList()
         )
 
+    // Gamaeyat
+    val allGamaeyat: StateFlow<List<GamaeyaEntity>> = repository.getAllGamaeyat()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // Students
+    val allStudents: StateFlow<List<StudentEntity>> = repository.getAllStudents()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     // Reports: Month by month comparison
     val monthlyReports: StateFlow<List<MonthlyReportItem>> = combine(
         repository.getAllExpenses(),
-        repository.getAllRevenues(),
-        repository.getAllVehicleLogs()
-    ) { expenses, revenues, logs ->
-        calculationUseCase.calculateMonthlyReports(expenses, revenues, logs)
+        repository.getAllRevenues()
+    ) { expenses, revenues ->
+        val currentYr = DateUtils.currentYear()
+        (1..12).map { month ->
+            val start = DateUtils.getMonthStartEpoch(currentYr, month)
+            val end = DateUtils.getMonthEndEpoch(currentYr, month)
+            val monthExpenses = expenses.filter { it.date in start..end }.sumOf { it.amountPiastres }
+            val monthRevenues = revenues.filter { it.date in start..end && !it.isAccrualCollection }.sumOf { it.amountPiastres }
+            MonthlyReportItem(
+                year = currentYr,
+                month = month,
+                monthName = DateUtils.arabicMonthNames[month - 1],
+                totalExpensesPiastres = monthExpenses,
+                totalRevenuesPiastres = monthRevenues,
+                netBalancePiastres = monthRevenues - monthExpenses
+            )
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -229,25 +290,26 @@ class FinanceViewModel(
         isTaxDeductible: Boolean = false
     ) {
         viewModelScope.launch {
+            val amountPiastres = MoneyUtils.egpToPiastres(amount)
             val entity = ExpenseEntity(
-                id = id,
-                amount = amount.toPlainString(),
+                expenseId = id,
+                amountPiastres = amountPiastres,
                 date = date,
                 department = department,
-                category = category,
+                subcategory = category,
                 title = title,
-                notes = notes,
-                vehicleId = vehicleId,
-                studentName = studentName,
-                institution = institution,
-                academicTerm = academicTerm,
-                projectName = projectName,
-                isTaxDeductible = isTaxDeductible
+                notes = notes.ifBlank { null },
+                vehicleId = vehicleId
             )
             if (id == 0L) {
                 repository.insertExpense(entity)
             } else {
-                repository.updateExpense(entity)
+                val existing = repository.getExpenseById(id)
+                if (existing != null) {
+                    repository.updateExpense(existing, entity)
+                } else {
+                    repository.insertExpense(entity)
+                }
             }
         }
     }
@@ -270,20 +332,25 @@ class FinanceViewModel(
         certificateId: Long? = null
     ) {
         viewModelScope.launch {
+            val amountPiastres = MoneyUtils.egpToPiastres(amount)
             val entity = RevenueEntity(
-                id = id,
-                amount = amount.toPlainString(),
+                revenueId = id,
+                amountPiastres = amountPiastres,
                 date = date,
-                category = category,
+                sourceType = category,
                 title = title,
-                notes = notes,
-                vehicleId = vehicleId,
+                notes = notes.ifBlank { null },
                 certificateId = certificateId
             )
             if (id == 0L) {
                 repository.insertRevenue(entity)
             } else {
-                repository.updateRevenue(entity)
+                val existing = repository.getRevenueById(id)
+                if (existing != null) {
+                    repository.updateRevenue(existing, entity)
+                } else {
+                    repository.insertRevenue(entity)
+                }
             }
         }
     }
@@ -305,12 +372,11 @@ class FinanceViewModel(
     ) {
         viewModelScope.launch {
             val entity = VehicleEntity(
-                id = id,
+                vehicleId = id,
                 name = name,
                 plateNumber = plateNumber,
-                modelYear = modelYear,
-                initialOdometer = initialOdometer,
-                notes = notes
+                initialOdometerKm = initialOdometer.toLong(),
+                currentOdometerKm = initialOdometer.toLong()
             )
             if (id == 0L) {
                 repository.insertVehicle(entity)
@@ -322,7 +388,10 @@ class FinanceViewModel(
 
     fun deleteVehicle(id: Long) {
         viewModelScope.launch {
-            repository.deleteVehicleById(id)
+            val v = repository.getVehicleById(id)
+            if (v != null) {
+                repository.deleteVehicle(v)
+            }
         }
     }
 
@@ -340,29 +409,39 @@ class FinanceViewModel(
         notes: String = ""
     ) {
         viewModelScope.launch {
-            val entity = VehicleLogEntity(
-                id = id,
-                vehicleId = vehicleId,
-                logType = logType,
-                amount = amount.toPlainString(),
-                date = date,
-                odometer = odometer,
-                liters = liters,
-                serviceType = serviceType,
-                serviceCenter = serviceCenter,
-                notes = notes
-            )
-            if (id == 0L) {
-                repository.insertVehicleLog(entity)
-            } else {
-                repository.updateVehicleLog(entity)
-            }
-        }
-    }
+            val vehicle = repository.getVehicleById(vehicleId)
+            val vehicleName = vehicle?.name ?: "المركبة"
+            val totalCostPiastres = MoneyUtils.egpToPiastres(amount)
 
-    fun deleteVehicleLog(id: Long) {
-        viewModelScope.launch {
-            repository.deleteVehicleLogById(id)
+            if (logType.equals("FUEL", ignoreCase = true)) {
+                val fuelLog = VehicleFuelLogEntity(
+                    fuelLogId = id,
+                    vehicleId = vehicleId,
+                    date = date,
+                    odometerKm = odometer?.toLong() ?: 0L,
+                    quantityLiters = liters ?: 0.0,
+                    pricePerLiterPiastres = if ((liters ?: 0.0) > 0.0) {
+                        (totalCostPiastres / (liters ?: 1.0)).toLong()
+                    } else 0L,
+                    totalCostPiastres = totalCostPiastres,
+                    isFullTank = true,
+                    linkedExpenseId = 0L
+                )
+                repository.insertFuelLogWithExpense(fuelLog, vehicleName)
+            } else {
+                val maintLog = VehicleMaintenanceLogEntity(
+                    maintenanceLogId = id,
+                    vehicleId = vehicleId,
+                    date = date,
+                    odometerKm = odometer?.toLong() ?: 0L,
+                    maintenanceType = serviceType ?: "PERIODIC_SERVICE",
+                    description = notes.ifBlank { "صيانة دورية" },
+                    totalCostPiastres = totalCostPiastres,
+                    serviceCenter = serviceCenter,
+                    linkedExpenseId = 0L
+                )
+                repository.insertMaintenanceLogWithExpense(maintLog, vehicleName)
+            }
         }
     }
 
@@ -379,28 +458,28 @@ class FinanceViewModel(
         notes: String = ""
     ) {
         viewModelScope.launch {
+            val principalPiastres = MoneyUtils.egpToPiastres(principalAmount)
             val entity = FinancialCertificateEntity(
-                id = id,
+                certificateId = id,
                 name = name,
                 bankName = bankName,
-                principalAmount = principalAmount.toPlainString(),
-                annualInterestRate = annualInterestRate,
+                principalPiastres = principalPiastres,
+                annualRatePercent = annualInterestRate.toString(),
                 payoutFrequency = payoutFrequency,
+                durationYears = 3,
                 issueDate = issueDate,
-                maturityDate = maturityDate,
-                notes = notes
+                maturityDate = maturityDate
             )
-            if (id == 0L) {
-                repository.insertCertificate(entity)
-            } else {
-                repository.updateCertificate(entity)
-            }
+            repository.createCertificateWithSchedules(entity)
         }
     }
 
     fun deleteCertificate(id: Long) {
         viewModelScope.launch {
-            repository.deleteCertificateById(id)
+            val cert = repository.getCertificateById(id)
+            if (cert != null) {
+                repository.deleteCertificate(cert)
+            }
         }
     }
 

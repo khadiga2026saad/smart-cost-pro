@@ -11,17 +11,18 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VehicleDao {
-    @Query("SELECT * FROM vehicles ORDER BY createdAt DESC")
+
+    @Query("SELECT * FROM vehicles ORDER BY vehicleId DESC")
     fun getAllVehicles(): Flow<List<VehicleEntity>>
 
-    @Query("SELECT * FROM vehicles WHERE id = :id LIMIT 1")
-    suspend fun getVehicleById(id: Long): VehicleEntity?
+    @Query("SELECT * FROM vehicles WHERE isActive = 1 ORDER BY name ASC")
+    fun getActiveVehicles(): Flow<List<VehicleEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Query("SELECT * FROM vehicles WHERE vehicleId = :vehicleId LIMIT 1")
+    suspend fun getVehicleById(vehicleId: Long): VehicleEntity?
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertVehicle(vehicle: VehicleEntity): Long
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertVehicles(vehicles: List<VehicleEntity>)
 
     @Update
     suspend fun updateVehicle(vehicle: VehicleEntity)
@@ -29,6 +30,9 @@ interface VehicleDao {
     @Delete
     suspend fun deleteVehicle(vehicle: VehicleEntity)
 
-    @Query("DELETE FROM vehicles WHERE id = :id")
-    suspend fun deleteVehicleById(id: Long)
+    @Query("UPDATE vehicles SET currentOdometerKm = :newOdometer WHERE vehicleId = :vehicleId AND :newOdometer > currentOdometerKm")
+    suspend fun updateOdometerIfHigher(vehicleId: Long, newOdometer: Long)
+
+    @Query("UPDATE vehicles SET lastOilChangeKm = :odometer WHERE vehicleId = :vehicleId")
+    suspend fun updateLastOilChange(vehicleId: Long, odometer: Long)
 }

@@ -154,9 +154,7 @@ fun RevenuesScreen(
 
                 // Total Revenues Banner
                 item {
-                    val totalRevenuesAmount = revenues.fold(MoneyUtils.ZERO) { acc, rev ->
-                        MoneyUtils.add(acc, MoneyUtils.parseBigDecimalAllowZero(rev.amount))
-                    }
+                    val totalRevenuesPiastres = revenues.sumOf { it.amountPiastres }
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -175,7 +173,7 @@ fun RevenuesScreen(
                                 Text("إجمالي إيرادات الشهر", style = MaterialTheme.typography.labelMedium.copy(color = FinancialGreen))
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    MoneyUtils.format(totalRevenuesAmount),
+                                    MoneyUtils.formatPiastres(totalRevenuesPiastres),
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, color = FinancialGreen)
                                 )
                             }
@@ -354,7 +352,7 @@ fun RevenuesScreen(
         AlertDialog(
             onDismissRequest = { revenueToDelete = null },
             title = { Text("حذف الإيراد", fontWeight = FontWeight.Bold) },
-            text = { Text("هل أنت متأكد من حذف إيراد \"${rev.title}\" بقيمة ${MoneyUtils.format(MoneyUtils.parseBigDecimalAllowZero(rev.amount))}؟") },
+            text = { Text("هل أنت متأكد من حذف إيراد \"${rev.title}\" بقيمة ${MoneyUtils.formatPiastres(rev.amountPiastres)}؟") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -437,12 +435,12 @@ private fun RevenueDetailCard(
                 }
 
                 Text(
-                    text = "+ " + MoneyUtils.format(MoneyUtils.parseBigDecimalAllowZero(revenue.amount)),
+                    text = "+ " + MoneyUtils.formatPiastres(revenue.amountPiastres),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, color = FinancialGreen)
                 )
             }
 
-            if (revenue.notes.isNotBlank()) {
+            if (!revenue.notes.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "ملاحظات: ${revenue.notes}",
