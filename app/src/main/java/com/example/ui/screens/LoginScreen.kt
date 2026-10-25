@@ -339,7 +339,7 @@ fun LoginScreen(
 
     if (loginViewModel.showGooglePasswordDialog) {
         AlertDialog(
-            onDismissRequest = { loginViewModel.skipGooglePasswordSetup(); googlePassword = ""; confirmGooglePassword = "" },
+            onDismissRequest = { },
             title = { Text("تعيين كلمة مرور للحساب", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -376,13 +376,6 @@ fun LoginScreen(
                     }
                 ) { Text(if (isLoading) "جارٍ الحفظ..." else "تعيين كلمة المرور") }
             },
-            dismissButton = {
-                TextButton(onClick = {
-                    loginViewModel.skipGooglePasswordSetup()
-                    googlePassword = ""
-                    confirmGooglePassword = ""
-                }) { Text("لاحقًا") }
-            }
         )
     }
 
