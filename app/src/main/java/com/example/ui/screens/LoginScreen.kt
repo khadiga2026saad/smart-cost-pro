@@ -336,7 +336,6 @@ fun LoginScreen(
             }
         )
     }
-}
 
     if (loginViewModel.showGooglePasswordDialog) {
         AlertDialog(
@@ -386,6 +385,8 @@ fun LoginScreen(
             }
         )
     }
+
+}
 
 @Preview(showBackground = true, locale = "ar")
 @Composable
