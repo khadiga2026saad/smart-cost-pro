@@ -400,7 +400,6 @@ fun HomeScreen(
                 )
             }
 
-            Text("تجربة ChatGPT ✓", modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), color = GoldDark, fontSize = 12.sp, textAlign = TextAlign.Right)
 
             // شريط التنبيهات والأخبار المالي المتحرك (ثابت لا يتحرك عند التمرير)
             Box(
