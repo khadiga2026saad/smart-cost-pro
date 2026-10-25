@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -180,7 +181,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(7.dp))
                 Button(
-                    onClick = { loginViewModel.onLoginClick(onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(44.dp),
+                    onClick = { (context as? FragmentActivity)?.let { loginViewModel.onLoginClick(it, onLoginClick) } ?: run { android.widget.Toast.makeText(context, "تعذر فتح نافذة المصادقة", android.widget.Toast.LENGTH_SHORT).show() } }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(44.dp),
                     shape = fieldShape, colors = ButtonDefaults.buttonColors(containerColor = DeepSlate),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
@@ -200,7 +201,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(6.dp))
                 Surface(
-                    onClick = { loginViewModel.onBiometricClick() }, modifier = Modifier.fillMaxWidth(),
+                    onClick = { (context as? FragmentActivity)?.let { loginViewModel.onBiometricClick(it, onLoginClick) } ?: run { android.widget.Toast.makeText(context, "تعذر فتح نافذة البصمة", android.widget.Toast.LENGTH_SHORT).show() } }, modifier = Modifier.fillMaxWidth(),
                     shape = fieldShape, color = GoldLight.copy(alpha = .7f),
                     border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .45f))
                 ) {
@@ -282,7 +283,7 @@ fun LoginScreen(
             confirmButton = {
                 TextButton(
                     enabled = !isLoading,
-                    onClick = { loginViewModel.registerAccount(confirmPassword, onLoginClick) }
+                    onClick = { (context as? FragmentActivity)?.let { loginViewModel.registerAccount(confirmPassword, it, onLoginClick) } }
                 ) { Text(if (isLoading) "جارٍ الإنشاء..." else "إنشاء الحساب") }
             },
             dismissButton = {
