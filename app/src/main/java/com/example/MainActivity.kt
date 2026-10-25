@@ -7,6 +7,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -132,6 +136,23 @@ fun SmartCostProApp(
     }
     var isInWorkspace by remember {
         mutableStateOf(FirebaseAuth.getInstance().currentUser != null && !biometricEnabled)
+    }
+
+    // Re-lock the workspace when the app returns from the background, if biometrics are enabled.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, biometricEnabled) {
+        var hasGoneToBackground = false
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                hasGoneToBackground = true
+            } else if (event == Lifecycle.Event.ON_START && hasGoneToBackground &&
+                biometricEnabled && FirebaseAuth.getInstance().currentUser != null) {
+                isInWorkspace = false
+                hasGoneToBackground = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     var currentScreen by remember { mutableStateOf(Screen.DASHBOARD) }
 
