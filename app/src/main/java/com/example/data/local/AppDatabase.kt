@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.core.DateUtils
 import com.example.core.MoneyUtils
@@ -16,6 +17,7 @@ import com.example.data.local.dao.StudentDao
 import com.example.data.local.dao.TreasuryMovementDao
 import com.example.data.local.dao.VehicleDao
 import com.example.data.local.dao.VehicleLogDao
+import com.example.data.local.dao.UserDao
 import com.example.data.local.entities.CertificatePayoutScheduleEntity
 import com.example.data.local.entities.CurrentAccountEntity
 import com.example.data.local.entities.ExpenseEntity
@@ -30,6 +32,7 @@ import com.example.data.local.entities.VehicleEntity
 import com.example.data.local.entities.VehicleFuelLogEntity
 import com.example.data.local.entities.VehicleMaintenanceLogEntity
 import com.example.data.local.entities.VehicleOilLogEntity
+import com.example.data.local.entities.UserEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,13 +52,15 @@ import kotlinx.coroutines.launch
         FinancialCertificateEntity::class,
         CertificatePayoutScheduleEntity::class,
         RevenueEntity::class,
-        TreasuryMovementEntity::class
+        TreasuryMovementEntity::class,
+        UserEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
+    abstract fun userDao(): UserDao
     abstract fun currentAccountDao(): CurrentAccountDao
     abstract fun studentDao(): StudentDao
     abstract fun vehicleDao(): VehicleDao
@@ -67,6 +72,13 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun treasuryMovementDao(): TreasuryMovementDao
 
     companion object {
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `username` TEXT NOT NULL, `email` TEXT NOT NULL, `passwordHash` TEXT NOT NULL, `salt` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_users_username` ON `users` (`username`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_users_email` ON `users` (`email`)")
+            }
+        }
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -77,6 +89,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "smart_cost_pro_database"
                 )
+                    .addMigrations(MIGRATION_1_2)
                     .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance
