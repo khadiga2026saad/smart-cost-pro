@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ui.viewmodel.LoginViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -47,12 +49,20 @@ fun LoginScreen(
     onGuestClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onLanguageClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    loginViewModel: LoginViewModel = viewModel()
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
-    var rememberDevice by remember { mutableStateOf(true) }
+    val username = loginViewModel.username
+    val password = loginViewModel.password
+    val showPassword = loginViewModel.showPassword
+    val rememberDevice = loginViewModel.rememberDevice
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val notice = loginViewModel.notice
+    val error = loginViewModel.errorMessage
+    LaunchedEffect(notice, error) {
+        (error ?: notice)?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show() }
+        if (notice != null) loginViewModel.clearNotice()
+    }
     val fieldShape = RoundedCornerShape(12.dp)
     Column(
         modifier = modifier.fillMaxSize().background(Color(0xFFF9F9FF))
@@ -64,7 +74,7 @@ fun LoginScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = onBackClick, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = { loginViewModel.onBackClick(); onBackClick() }, modifier = Modifier.size(40.dp)) {
                 Icon(Icons.Default.ArrowForward, contentDescription = "رجوع", tint = SlateLight)
             }
             Row(
@@ -77,7 +87,7 @@ fun LoginScreen(
                 Spacer(Modifier.width(6.dp))
                 Text("نظام مشفر آمن", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF047857))
             }
-            Surface(onClick = onLanguageClick, shape = CircleShape, color = GoldLight, border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .4f))) {
+            Surface(onClick = { loginViewModel.onLanguageClick() }, shape = CircleShape, color = GoldLight, border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .4f))) {
                 Text("◎ EN", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
             }
         }
@@ -110,7 +120,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(6.dp))
                 OutlinedTextField(
-                    value = username, onValueChange = { username = it },
+                    value = username, onValueChange = loginViewModel::onUsernameChange,
                     modifier = Modifier.fillMaxWidth(), singleLine = true,
                     placeholder = { Text("مثال: CEO@smartcost.pro أو 29401", fontSize = 11.sp) },
                     leadingIcon = { Icon(Icons.Default.Person, null, Modifier.size(18.dp), tint = TextTertiaryDark) },
@@ -129,14 +139,14 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(6.dp))
                 OutlinedTextField(
-                    value = password, onValueChange = { password = it },
+                    value = password, onValueChange = loginViewModel::onPasswordChange,
                     modifier = Modifier.fillMaxWidth(), singleLine = true,
                     placeholder = { Text("••••••••••••", fontSize = 12.sp) },
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     leadingIcon = { Icon(Icons.Default.Lock, null, Modifier.size(18.dp), tint = TextTertiaryDark) },
                     trailingIcon = {
-                        IconButton(onClick = { showPassword = !showPassword }) {
+                        IconButton(onClick = { loginViewModel.onPasswordVisibilityClick() }) {
                             Icon(if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = if (showPassword) "إخفاء كلمة المرور" else "إظهار كلمة المرور",
                                 tint = TextSecondaryDark, modifier = Modifier.size(18.dp))
@@ -151,17 +161,17 @@ fun LoginScreen(
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { rememberDevice = !rememberDevice }) {
-                        Checkbox(checked = rememberDevice, onCheckedChange = { rememberDevice = it },
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { loginViewModel.onRememberDeviceChange(!rememberDevice) }) {
+                        Checkbox(checked = rememberDevice, onCheckedChange = loginViewModel::onRememberDeviceChange,
                             modifier = Modifier.size(32.dp),
                             colors = CheckboxDefaults.colors(checkedColor = GoldDark))
                         Text("تذكر هذا الجهاز الآمن", fontSize = 11.sp, color = TextSecondaryDark)
                     }
-                    Text("استعادة الرمز؟", Modifier.clickable(onClick = onForgotPasswordClick), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+                    Text("استعادة الرمز؟", Modifier.clickable(onClick = { loginViewModel.onForgotPasswordClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
                 }
                 Spacer(Modifier.height(16.dp))
                 Button(
-                    onClick = onLoginClick, modifier = Modifier.fillMaxWidth().height(50.dp),
+                    onClick = { loginViewModel.onLoginClick(onLoginClick) }, modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = fieldShape, colors = ButtonDefaults.buttonColors(containerColor = DeepSlate),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
@@ -177,7 +187,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(16.dp))
                 Surface(
-                    onClick = onBiometricClick, modifier = Modifier.fillMaxWidth(),
+                    onClick = { loginViewModel.onBiometricClick() }, modifier = Modifier.fillMaxWidth(),
                     shape = fieldShape, color = GoldLight.copy(alpha = .7f),
                     border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .45f))
                 ) {
@@ -195,7 +205,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(10.dp))
                 OutlinedButton(
-                    onClick = onGoogleClick, modifier = Modifier.fillMaxWidth().height(48.dp),
+                    onClick = { loginViewModel.onGoogleClick() }, modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = fieldShape, border = BorderStroke(1.dp, BorderLight),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceCard)
                 ) {
@@ -207,12 +217,12 @@ fun LoginScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Text("ليس لديك حساب؟", fontSize = 11.sp, color = TextSecondaryDark)
                     Spacer(Modifier.width(5.dp))
-                    Text("سجل الآن", Modifier.clickable(onClick = onRegisterClick), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+                    Text("سجل الآن", Modifier.clickable(onClick = { loginViewModel.onRegisterClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
                 }
             }
         }
         Spacer(Modifier.height(16.dp))
-        Text("الدخول كزائر لتصفح النظام", Modifier.clickable(onClick = onGuestClick).padding(8.dp),
+        Text("الدخول كزائر لتصفح النظام", Modifier.clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(8.dp),
             fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondaryDark, textAlign = TextAlign.Center)
         Spacer(Modifier.height(16.dp))
     }
