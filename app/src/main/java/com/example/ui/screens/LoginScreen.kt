@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
+import com.example.R
 
 @Composable
 fun LoginScreen(
@@ -91,10 +95,12 @@ fun LoginScreen(
                 Text("◎ EN", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
             }
         }
-        // No verified standalone logo asset: keep the requested image space without inventing artwork.
-        Box(Modifier.fillMaxWidth().heightIn(max = 208.dp).height(150.dp), contentAlignment = Alignment.Center) {
-            Text("SMART COST PRO", color = GoldDark, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
-        }
+        Image(
+            painter = painterResource(id = R.drawable.ic_smart_cost_logo),
+            contentDescription = "الشعار الرسمي لتطبيق سمارت كوست برو",
+            modifier = Modifier.fillMaxWidth().heightIn(max = 208.dp).height(150.dp),
+            contentScale = ContentScale.Fit
+        )
         Text("منظومة الإدارة والتكاليف التنفيذية الذكية", fontSize = 11.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
         Surface(shape = CircleShape, color = SurfaceWhite, border = BorderStroke(1.dp, BorderLight), shadowElevation = 2.dp) {
@@ -209,7 +215,11 @@ fun LoginScreen(
                     shape = fieldShape, border = BorderStroke(1.dp, BorderLight),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceCard)
                 ) {
-                    Text("G", fontWeight = FontWeight.ExtraBold, color = CoralRed)
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google_logo),
+                        contentDescription = "شعار Google",
+                        modifier = Modifier.size(20.dp)
+                    )
                     Spacer(Modifier.width(10.dp))
                     Text("متابعة الدخول بحساب Google", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
