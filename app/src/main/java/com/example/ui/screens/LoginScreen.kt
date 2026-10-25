@@ -6,10 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -75,47 +73,47 @@ fun LoginScreen(
     val fieldShape = RoundedCornerShape(12.dp)
     Column(
         modifier = modifier.fillMaxSize().background(Color(0xFFF9F9FF))
-            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+            .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 12.dp),
+            Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = { loginViewModel.onBackClick(); onBackClick() }, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = { loginViewModel.onBackClick(); onBackClick() }, modifier = Modifier.size(34.dp)) {
                 Icon(Icons.Default.ArrowForward, contentDescription = "رجوع", tint = SlateLight)
             }
             Row(
                 Modifier.background(FinancialGreenContainer, CircleShape)
                     .border(1.dp, EmeraldGreen.copy(alpha = .25f), CircleShape)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.size(8.dp).background(EmeraldGreen, CircleShape))
+                Box(Modifier.size(6.dp).background(EmeraldGreen, CircleShape))
                 Spacer(Modifier.width(6.dp))
-                Text("نظام مشفر آمن", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF047857))
+                Text("نظام مشفر آمن", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF047857))
             }
             Surface(onClick = { loginViewModel.onLanguageClick() }, shape = CircleShape, color = GoldLight, border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .4f))) {
-                Text("◎ EN", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+                Text("◎ EN", Modifier.padding(horizontal = 9.dp, vertical = 4.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
             }
         }
         Image(
             painter = painterResource(id = R.drawable.ic_smart_cost_logo),
             contentDescription = "الشعار الرسمي لتطبيق سمارت كوست برو",
-            modifier = Modifier.fillMaxWidth().heightIn(max = 208.dp).height(150.dp),
+            modifier = Modifier.fillMaxWidth().height(88.dp),
             contentScale = ContentScale.Fit
         )
-        Text("منظومة الإدارة والتكاليف التنفيذية الذكية", fontSize = 11.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(8.dp))
+        Text("منظومة الإدارة والتكاليف التنفيذية الذكية", fontSize = 10.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(4.dp))
         Surface(shape = CircleShape, color = SurfaceWhite, border = BorderStroke(1.dp, BorderLight), shadowElevation = 2.dp) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Shield, null, Modifier.size(12.dp), tint = GoldPrimary)
                 Spacer(Modifier.width(6.dp))
-                Text("eng.mamdouh saad", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
+                Text("eng.mamdouh saad", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SlateLight)
             }
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(8.dp))
         Surface(
             modifier = Modifier.fillMaxWidth().widthIn(max = 448.dp),
             shape = RoundedCornerShape(24.dp),
@@ -123,13 +121,13 @@ fun LoginScreen(
             border = BorderStroke(1.dp, BorderLight.copy(alpha = .6f)),
             shadowElevation = 12.dp
         ) {
-            Column(Modifier.padding(24.dp)) {
+            Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Person, null, Modifier.size(15.dp), tint = GoldDark)
                     Spacer(Modifier.width(6.dp))
                     Text("اسم المستخدم أو البريد الإلكتروني", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(3.dp))
                 OutlinedTextField(
                     value = username, onValueChange = loginViewModel::onUsernameChange,
                     modifier = Modifier.fillMaxWidth(), singleLine = true,
@@ -142,7 +140,7 @@ fun LoginScreen(
                         focusedContainerColor = SurfaceCard, unfocusedContainerColor = SurfaceCard
                     )
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(7.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Lock, null, Modifier.size(15.dp), tint = GoldDark)
                     Spacer(Modifier.width(6.dp))
@@ -170,7 +168,7 @@ fun LoginScreen(
                         focusedContainerColor = SurfaceCard, unfocusedContainerColor = SurfaceCard
                     )
                 )
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(3.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { loginViewModel.onRememberDeviceChange(!rememberDevice) }) {
                         Checkbox(checked = rememberDevice, onCheckedChange = loginViewModel::onRememberDeviceChange,
@@ -180,9 +178,9 @@ fun LoginScreen(
                     }
                     Text("استعادة الرمز؟", Modifier.clickable(onClick = { loginViewModel.onForgotPasswordClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(7.dp))
                 Button(
-                    onClick = { loginViewModel.onLoginClick(onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(50.dp),
+                    onClick = { loginViewModel.onLoginClick(onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(44.dp),
                     shape = fieldShape, colors = ButtonDefaults.buttonColors(containerColor = DeepSlate),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
@@ -194,21 +192,21 @@ fun LoginScreen(
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.Default.ArrowBack, null, Modifier.size(17.dp), tint = GoldPrimary)
                 }
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     HorizontalDivider(Modifier.weight(1f), color = BorderLight)
                     Text("أو تسجيل الدخول السريع", Modifier.padding(horizontal = 10.dp), fontSize = 10.sp, color = TextTertiaryDark)
                     HorizontalDivider(Modifier.weight(1f), color = BorderLight)
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(6.dp))
                 Surface(
                     onClick = { loginViewModel.onBiometricClick() }, modifier = Modifier.fillMaxWidth(),
                     shape = fieldShape, color = GoldLight.copy(alpha = .7f),
                     border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .45f))
                 ) {
-                    Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(32.dp).background(SurfaceWhite, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Shield, null, Modifier.size(19.dp), tint = GoldDark)
+                    Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(28.dp).background(SurfaceWhite, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Shield, null, Modifier.size(17.dp), tint = GoldDark)
                         }
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
@@ -218,9 +216,9 @@ fun LoginScreen(
                         Icon(Icons.Default.ArrowBack, null, Modifier.size(15.dp), tint = GoldDark)
                     }
                 }
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(5.dp))
                 OutlinedButton(
-                    onClick = { loginViewModel.onGoogleClick(context, onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(48.dp),
+                    onClick = { loginViewModel.onGoogleClick(context, onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(42.dp),
                     shape = fieldShape, border = BorderStroke(1.dp, BorderLight),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceCard)
                 ) {
@@ -232,7 +230,7 @@ fun LoginScreen(
                     Spacer(Modifier.width(10.dp))
                     Text("متابعة الدخول بحساب Google", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(5.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Text("ليس لديك حساب؟", fontSize = 11.sp, color = TextSecondaryDark)
                     Spacer(Modifier.width(5.dp))
@@ -240,10 +238,10 @@ fun LoginScreen(
                 }
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Text("الدخول كزائر لتصفح النظام", Modifier.clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(8.dp),
+        Spacer(Modifier.height(5.dp))
+        Text("الدخول كزائر لتصفح النظام", Modifier.fillMaxWidth().clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(vertical = 5.dp),
             fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondaryDark, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(2.dp))
     }
 
     if (showRegisterDialog) {
