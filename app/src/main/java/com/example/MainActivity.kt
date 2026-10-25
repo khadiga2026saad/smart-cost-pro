@@ -2,11 +2,15 @@ package com.example
 
 import android.content.res.Configuration
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -74,7 +78,7 @@ import com.example.ui.viewmodel.FinanceViewModel
 import com.google.firebase.auth.FirebaseAuth
 import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private val financeViewModel: FinanceViewModel by viewModels { FinanceViewModel.Factory }
 
@@ -123,8 +127,33 @@ fun SmartCostProApp(
     onToggleLanguage: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Starts at the single LoginScreen
-    var isInWorkspace by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
+    // Keep the Firebase session, but require biometric verification on a fresh app launch
+    // when the user opted in to biometric unlock on this device.
+    val appContext = LocalContext.current
+    val biometricEnabled = remember {
+        appContext.getSharedPreferences("smart_cost_auth_prefs", android.content.Context.MODE_PRIVATE)
+            .getBoolean("biometric_enabled", false)
+    }
+    var isInWorkspace by remember {
+        mutableStateOf(FirebaseAuth.getInstance().currentUser != null && !biometricEnabled)
+    }
+
+    // Re-lock the workspace when the app returns from the background, if biometrics are enabled.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, biometricEnabled) {
+        var hasGoneToBackground = false
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                hasGoneToBackground = true
+            } else if (event == Lifecycle.Event.ON_START && hasGoneToBackground &&
+                biometricEnabled && FirebaseAuth.getInstance().currentUser != null) {
+                isInWorkspace = false
+                hasGoneToBackground = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     var currentScreen by remember { mutableStateOf(Screen.DASHBOARD) }
 
     // Dialog trigger flags when navigating from quick actions
