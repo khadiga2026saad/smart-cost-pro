@@ -28,7 +28,7 @@ class UserRepository(private val dao: UserDao) {
             )
         } finally {
             spec.clearPassword()
-            password.fill('\\u0000')
+            password.fill(0.toChar())
         }
     }
 }
