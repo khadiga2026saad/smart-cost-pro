@@ -77,6 +77,7 @@ interface FinanceRepository {
     suspend fun insertOilLogWithExpense(log: VehicleOilLogEntity, vehicleName: String): Long
     fun getAccidentLogsForVehicle(vehicleId: Long): Flow<List<VehicleAccidentLogEntity>>
     suspend fun insertAccidentLogWithExpense(log: VehicleAccidentLogEntity, vehicleName: String): Long
+    suspend fun deleteVehicleLogById(id: Long, logType: String = "")
 
     // Gamaeyat
     fun getAllGamaeyat(): Flow<List<GamaeyaEntity>>
@@ -409,6 +410,15 @@ class FinanceRepositoryImpl(private val database: AppDatabase) : FinanceReposito
             )
         }
         vehicleLogDao.insertAccidentLog(log.copy(linkedExpenseId = expenseId))
+    }
+
+    override suspend fun deleteVehicleLogById(id: Long, logType: String): Unit = database.withTransaction {
+        if (logType.equals("MAINTENANCE", ignoreCase = true)) {
+            vehicleLogDao.deleteMaintenanceLogById(id)
+        } else {
+            vehicleLogDao.deleteFuelLogById(id)
+            vehicleLogDao.deleteMaintenanceLogById(id)
+        }
     }
 
     override fun getAllGamaeyat(): Flow<List<GamaeyaEntity>> = gamaeyaDao.getAllGamaeyat()

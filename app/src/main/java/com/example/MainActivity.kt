@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -9,10 +10,13 @@ import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +46,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -51,14 +58,20 @@ import com.example.ui.navigation.Screen
 import com.example.ui.screens.AuthScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.ExpensesScreen
+import com.example.ui.screens.ExecutiveHeader
+import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.LiveFinancialTickerBar
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.RevenuesScreen
+import com.example.ui.screens.SearchDialog
 import com.example.ui.screens.VehiclesScreen
+import com.example.ui.screens.VoiceSearchDialog
 import com.example.ui.theme.BlackPrimary
 import com.example.ui.theme.GoldDark
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.SmartCostProTheme
 import com.example.ui.viewmodel.FinanceViewModel
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -69,10 +82,32 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
+            var isEnglish by remember { mutableStateOf(false) }
+
+            val currentContext = LocalContext.current
+            val currentConfig = LocalConfiguration.current
+
+            val localizedContext = remember(isEnglish) {
+                val locale = if (isEnglish) Locale("en") else Locale("ar")
+                val config = Configuration(currentConfig).apply {
+                    setLocale(locale)
+                    setLayoutDirection(locale)
+                }
+                currentContext.createConfigurationContext(config)
+            }
+
+            val layoutDirection = if (isEnglish) LayoutDirection.Ltr else LayoutDirection.Rtl
+
             SmartCostProTheme {
-                // Ensure complete Right-to-Left (RTL) Arabic layout
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    SmartCostProApp(viewModel = financeViewModel)
+                CompositionLocalProvider(
+                    LocalContext provides localizedContext,
+                    LocalLayoutDirection provides layoutDirection
+                ) {
+                    SmartCostProApp(
+                        viewModel = financeViewModel,
+                        isEnglish = isEnglish,
+                        onToggleLanguage = { isEnglish = !isEnglish }
+                    )
                 }
             }
         }
@@ -83,9 +118,12 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SmartCostProApp(
     viewModel: FinanceViewModel,
+    isEnglish: Boolean = false,
+    onToggleLanguage: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var isInWorkspace by remember { mutableStateOf(true) } // Initially in workspace for convenience
+    // Starts at AuthScreen (شاشة الدخول الأولى) as specified
+    var isInWorkspace by remember { mutableStateOf(false) }
     var currentScreen by remember { mutableStateOf(Screen.DASHBOARD) }
 
     // Dialog trigger flags when navigating from quick actions
@@ -93,8 +131,14 @@ fun SmartCostProApp(
     var triggerAddRevenue by remember { mutableStateOf(false) }
 
     if (!isInWorkspace) {
+        // شاشة الدخول الأولى (Executive Login Screen)
         AuthScreen(
-            onEnterWorkspace = { isInWorkspace = true },
+            onEnterWorkspace = {
+                isInWorkspace = true
+                currentScreen = Screen.DASHBOARD
+            },
+            isEnglish = isEnglish,
+            onToggleLanguage = onToggleLanguage,
             modifier = modifier
         )
     } else {
@@ -103,140 +147,165 @@ fun SmartCostProApp(
             currentScreen = Screen.DASHBOARD
         }
 
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "SMART COST PRO",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.sp,
-                                    color = BlackPrimary
-                                )
-                            )
+        // When on DASHBOARD, HomeScreen provides its full dedicated Executive Header & Navigation
+        if (currentScreen == Screen.DASHBOARD) {
+            HomeScreen(
+                viewModel = viewModel,
+                onNavigateToGateway = { gatewayId ->
+                    when (gatewayId) {
+                        "income_accounts" -> {
+                            currentScreen = Screen.REVENUES
+                            triggerAddRevenue = false
                         }
-                    },
-                    navigationIcon = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = GoldPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "محلي",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = GoldDark,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
+                        "daily_expenses", "expenses" -> {
+                            currentScreen = Screen.EXPENSES
+                            triggerAddExpense = false
                         }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = { isInWorkspace = false },
-                            modifier = Modifier.testTag("btn_logout")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Logout,
-                                contentDescription = "قفل مساحة العمل",
-                                tint = Color.Gray
-                            )
+                        "vehicles" -> {
+                            currentScreen = Screen.VEHICLES
                         }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
-                )
-            },
-            bottomBar = {
-                NavigationBar(
-                    modifier = Modifier
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                        .testTag("bottom_nav_bar"),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = BlackPrimary
-                ) {
-                    Screen.entries.forEach { screen ->
-                        val isSelected = currentScreen == screen
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = {
-                                currentScreen = screen
-                                triggerAddExpense = false
-                                triggerAddRevenue = false
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = screen.icon,
-                                    contentDescription = screen.titleAr
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = screen.titleAr,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = BlackPrimary,
-                                selectedTextColor = BlackPrimary,
-                                indicatorColor = GoldPrimary,
-                                unselectedIconColor = Color.Gray,
-                                unselectedTextColor = Color.Gray
-                            ),
-                            modifier = Modifier.testTag("nav_item_${screen.route}")
+                        "reports", "reports_analytics" -> {
+                            currentScreen = Screen.REPORTS
+                        }
+                        "project_costing", "vendors_clients" -> {
+                            currentScreen = Screen.EXPENSES
+                        }
+                        "budgets" -> {
+                            currentScreen = Screen.REPORTS
+                        }
+                        "settings_backup" -> {
+                            isInWorkspace = false
+                        }
+                    }
+                },
+                onLogout = {
+                    isInWorkspace = false
+                },
+                modifier = modifier
+            )
+        } else {
+            // Secondary Screen Scaffold with TopAppBar and standard NavigationBar
+            Scaffold(
+                modifier = modifier.fillMaxSize(),
+                topBar = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        // Current live time state for header
+                        var currentTimeString by remember { mutableStateOf("") }
+                        var currentDateString by remember { mutableStateOf("") }
+                        var showSearchDialog by remember { mutableStateOf(false) }
+                        var searchQuery by remember { mutableStateOf("") }
+                        var showVoiceDialog by remember { mutableStateOf(false) }
+
+                        LaunchedEffect(Unit) {
+                            val timeFormat = java.text.SimpleDateFormat("hh:mm a", java.util.Locale("ar"))
+                            val dateFormat = java.text.SimpleDateFormat("d MMMM yyyy", java.util.Locale("ar"))
+                            while (true) {
+                                val now = java.util.Date()
+                                currentTimeString = timeFormat.format(now)
+                                currentDateString = dateFormat.format(now)
+                                kotlinx.coroutines.delay(1000L)
+                            }
+                        }
+
+                        ExecutiveHeader(
+                            timeString = currentTimeString,
+                            dateString = currentDateString,
+                            onSearchClick = { showSearchDialog = true },
+                            onVoiceClick = { showVoiceDialog = true },
+                            onSettingsClick = { },
+                            onLogout = { isInWorkspace = false },
+                            onHomeClick = { currentScreen = Screen.DASHBOARD }
                         )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        LiveFinancialTickerBar()
+
+                        if (showSearchDialog) {
+                            SearchDialog(
+                                query = searchQuery,
+                                onQueryChange = { searchQuery = it },
+                                onDismiss = { showSearchDialog = false }
+                            )
+                        }
+
+                        if (showVoiceDialog) {
+                            VoiceSearchDialog(onDismiss = { showVoiceDialog = false })
+                        }
+                    }
+                },
+                bottomBar = {
+                    NavigationBar(
+                        modifier = Modifier
+                            .windowInsetsPadding(WindowInsets.navigationBars)
+                            .testTag("bottom_nav_bar"),
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = BlackPrimary
+                    ) {
+                        Screen.entries.forEach { screen ->
+                            val isSelected = currentScreen == screen
+                            NavigationBarItem(
+                                selected = isSelected,
+                                onClick = {
+                                    currentScreen = screen
+                                    triggerAddExpense = false
+                                    triggerAddRevenue = false
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = screen.icon,
+                                        contentDescription = screen.titleAr
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        text = screen.titleAr,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = BlackPrimary,
+                                    selectedTextColor = BlackPrimary,
+                                    indicatorColor = GoldPrimary,
+                                    unselectedIconColor = Color.Gray,
+                                    unselectedTextColor = Color.Gray
+                                ),
+                                modifier = Modifier.testTag("nav_item_${screen.route}")
+                            )
+                        }
                     }
                 }
-            }
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                Crossfade(targetState = currentScreen, label = "screen_crossfade") { screen ->
-                    when (screen) {
-                        Screen.DASHBOARD -> DashboardScreen(
-                            viewModel = viewModel,
-                            onNavigateToExpenses = { currentScreen = Screen.EXPENSES },
-                            onNavigateToRevenues = { currentScreen = Screen.REVENUES },
-                            onNavigateToVehicles = { currentScreen = Screen.VEHICLES },
-                            onOpenAddExpense = {
-                                triggerAddExpense = true
-                                currentScreen = Screen.EXPENSES
-                            },
-                            onOpenAddRevenue = {
-                                triggerAddRevenue = true
-                                currentScreen = Screen.REVENUES
-                            },
-                            onOpenAddVehicleLog = {
-                                currentScreen = Screen.VEHICLES
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    Crossfade(targetState = currentScreen, label = "screen_crossfade") { screen ->
+                        when (screen) {
+                            Screen.DASHBOARD -> {
+                                // Handled in top branch
                             }
-                        )
-                        Screen.EXPENSES -> ExpensesScreen(
-                            viewModel = viewModel,
-                            showAddDialogInitially = triggerAddExpense
-                        )
-                        Screen.VEHICLES -> VehiclesScreen(
-                            viewModel = viewModel
-                        )
-                        Screen.REVENUES -> RevenuesScreen(
-                            viewModel = viewModel,
-                            showAddRevenueInitially = triggerAddRevenue
-                        )
-                        Screen.REPORTS -> ReportsScreen(
-                            viewModel = viewModel
-                        )
+                            Screen.EXPENSES -> ExpensesScreen(
+                                viewModel = viewModel,
+                                showAddDialogInitially = triggerAddExpense
+                            )
+                            Screen.VEHICLES -> VehiclesScreen(
+                                viewModel = viewModel
+                            )
+                            Screen.REVENUES -> RevenuesScreen(
+                                viewModel = viewModel,
+                                showAddRevenueInitially = triggerAddRevenue
+                            )
+                            Screen.REPORTS -> ReportsScreen(
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
             }

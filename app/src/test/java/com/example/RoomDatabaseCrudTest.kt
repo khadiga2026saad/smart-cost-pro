@@ -5,9 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.local.AppDatabase
 import com.example.data.local.entities.ExpenseEntity
-import com.example.data.local.entities.RevenueEntity
 import com.example.data.local.entities.VehicleEntity
-import com.example.data.local.entities.VehicleLogEntity
+import com.example.data.local.entities.VehicleFuelLogEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -47,10 +46,10 @@ class RoomDatabaseCrudTest {
         // 1. Insert
         val id = expenseDao.insertExpense(
             ExpenseEntity(
-                amount = "450.00",
+                amountPiastres = 45000L, // 450.00 EGP
                 date = 1000L,
                 department = "PERSONAL",
-                category = "عناية شخصية",
+                subcategory = "عناية شخصية",
                 title = "مشتريات صيدلية"
             )
         )
@@ -59,14 +58,16 @@ class RoomDatabaseCrudTest {
         // 2. Query by ID
         val retrieved = expenseDao.getExpenseById(id)
         assertNotNull(retrieved)
+        assertEquals(45000L, retrieved?.amountPiastres)
         assertEquals("450.00", retrieved?.amount)
         assertEquals("مشتريات صيدلية", retrieved?.title)
 
         // 3. Update
-        val updated = retrieved!!.copy(amount = "500.00", title = "مشتريات صيدلية ومستلزمات")
+        val updated = retrieved!!.copy(amountPiastres = 50000L, title = "مشتريات صيدلية ومستلزمات")
         expenseDao.updateExpense(updated)
 
         val retrievedAfterUpdate = expenseDao.getExpenseById(id)
+        assertEquals(50000L, retrievedAfterUpdate?.amountPiastres)
         assertEquals("500.00", retrievedAfterUpdate?.amount)
         assertEquals("مشتريات صيدلية ومستلزمات", retrievedAfterUpdate?.title)
 
@@ -82,18 +83,19 @@ class RoomDatabaseCrudTest {
 
         // Insert expenses with different dates
         expenseDao.insertExpense(
-            ExpenseEntity(amount = "100.00", date = 1000L, department = "HOME", category = "طعام", title = "1")
+            ExpenseEntity(amountPiastres = 10000L, date = 1000L, department = "HOME", subcategory = "طعام", title = "1")
         )
         expenseDao.insertExpense(
-            ExpenseEntity(amount = "200.00", date = 2000L, department = "HOME", category = "طعام", title = "2")
+            ExpenseEntity(amountPiastres = 20000L, date = 2000L, department = "HOME", subcategory = "طعام", title = "2")
         )
         expenseDao.insertExpense(
-            ExpenseEntity(amount = "300.00", date = 5000L, department = "HOME", category = "طعام", title = "3")
+            ExpenseEntity(amountPiastres = 30000L, date = 5000L, department = "HOME", subcategory = "طعام", title = "3")
         )
 
         // Filter range between 1500L and 3000L
         val filtered = expenseDao.getExpensesBetween(1500L, 3000L).first()
         assertEquals(1, filtered.size)
+        assertEquals(20000L, filtered[0].amountPiastres)
         assertEquals("200.00", filtered[0].amount)
     }
 
@@ -101,31 +103,47 @@ class RoomDatabaseCrudTest {
     fun `test vehicle and vehicle logs relations`() = runBlocking {
         val vehicleDao = db.vehicleDao()
         val vehicleLogDao = db.vehicleLogDao()
+        val expenseDao = db.expenseDao()
 
         val vId = vehicleDao.insertVehicle(
             VehicleEntity(
                 name = "هيونداي إلنترا",
                 plateNumber = "س ص ع 999",
-                modelYear = "2024",
-                initialOdometer = 5000
+                initialOdometerKm = 5000L,
+                currentOdometerKm = 5000L
+            )
+        )
+        assertTrue(vId > 0)
+
+        // Link with vehicle expense per constitution
+        val expenseId = expenseDao.insertExpense(
+            ExpenseEntity(
+                amountPiastres = 30000L,
+                date = 1000L,
+                department = "VEHICLES",
+                subcategory = "وقود",
+                title = "تفويل بنزين",
+                vehicleId = vId
             )
         )
 
-        val logId = vehicleLogDao.insertLog(
-            VehicleLogEntity(
+        val logId = vehicleLogDao.insertFuelLog(
+            VehicleFuelLogEntity(
                 vehicleId = vId,
-                logType = "FUEL",
-                amount = "300.00",
                 date = 1000L,
-                odometer = 5400,
-                liters = 35.0
+                odometerKm = 5400L,
+                quantityLiters = 35.0,
+                pricePerLiterPiastres = 850L,
+                totalCostPiastres = 30000L,
+                isFullTank = true,
+                linkedExpenseId = expenseId
             )
         )
         assertTrue(logId > 0)
 
-        val logsForVehicle = vehicleLogDao.getLogsByVehicle(vId).first()
+        val logsForVehicle = vehicleLogDao.getFuelLogsForVehicle(vId).first()
         assertEquals(1, logsForVehicle.size)
-        assertEquals("300.00", logsForVehicle[0].amount)
-        assertEquals(35.0, logsForVehicle[0].liters ?: 0.0, 0.01)
+        assertEquals(30000L, logsForVehicle[0].totalCostPiastres)
+        assertEquals(35.0, logsForVehicle[0].quantityLiters, 0.01)
     }
 }

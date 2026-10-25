@@ -3,7 +3,49 @@
     <string name="app_name_ar">سمارت كوست برو</string>
     <string name="app_tagline">الإدارة المالية الذكية والمصروفات</string>
     
-    <!-- Auth & Workspace -->
+    <!-- Auth Screen Exact Copy & Matching Requirements -->
+    <string name="auth_app_title_first">Smart Cost</string>
+    <string name="auth_app_title_pro">Pro</string>
+    <string name="auth_app_tagline">منظومة الإدارة والتكاليف التنفيذية الذكية</string>
+    <string name="auth_verified_user_badge">eng.mamdouh saad</string>
+    <string name="auth_input_user_label">اسم المستخدم أو البريد الإلكتروني</string>
+    <string name="auth_input_user_placeholder">مثال: CEO@smartcost.pro أو 29401</string>
+    <string name="auth_input_password_label">كلمة المرور المشفرة</string>
+    <string name="auth_input_password_aes">AES-256 bit</string>
+    <string name="auth_remember_secure_device">تذكر هذا الجهاز الآمن</string>
+    <string name="auth_forgot_password">استعادة كلمة المرور / الرمز؟</string>
+    <string name="auth_btn_login">تسجيل الدخول</string>
+    <string name="auth_or_quick_login">أو تسجيل الدخول السريع</string>
+    <string name="auth_card_biometric_title">الدخول السريع عبر Face ID / البصمة</string>
+    <string name="auth_card_biometric_desc">التحقق البيومتري المعتمد</string>
+    <string name="auth_btn_google">الدخول بحساب Google</string>
+    <string name="auth_dont_have_account">ليس لديك حساب؟</string>
+    <string name="auth_register_now">سجل الآن</string>
+    <string name="auth_login_as_guest">الدخول كزائر</string>
+    <string name="auth_language_switch_label">EN</string>
+    <string name="auth_demo_fill">تعبئة تجريبية سريعة</string>
+    <string name="auth_error_empty_user">يرجى إدخال اسم المستخدم أو البريد الإلكتروني</string>
+    <string name="auth_error_empty_password">يرجى إدخال كلمة المرور</string>
+    <string name="auth_error_password_length">كلمة المرور يجب أن لا تقل عن 6 أحرف</string>
+    <string name="auth_error_confirm_mismatch">كلمات المرور غير متطابقة</string>
+    <string name="auth_biometric_prompt_title">التحقق البيومتري المعتمد</string>
+    <string name="auth_biometric_prompt_desc">المس مستشعر البصمة أو الوجه للمصادقة السريعة الآمنة</string>
+    <string name="auth_biometric_sim_success">تم التحقق بنجاح من البصمة البيومترية</string>
+    <string name="auth_google_signing_in">جارٍ الاتصال والتحقق بحساب Google...</string>
+    <string name="auth_reset_pwd_title">استعادة كلمة المرور / الرمز</string>
+    <string name="auth_reset_pwd_desc">أدخل بريدك الإلكتروني أو المعرف المسجل لإعادة ضبط الرمز السري</string>
+    <string name="auth_send_code">إرسال رابط الاستعادة</string>
+    <string name="auth_reset_success">تم إرسال رابط استعادة الحساب بنجاح</string>
+    <string name="auth_register_title">إنشاء حساب تنفيذي جديد</string>
+    <string name="auth_register_name">الاسم واللقب الوظيفي</string>
+    <string name="auth_register_email">البريد الإلكتروني أو المعرف</string>
+    <string name="auth_register_password">كلمة المرور</string>
+    <string name="auth_register_confirm_password">تأكيد كلمة المرور</string>
+    <string name="auth_register_btn">إنشاء الحساب ومتابعة</string>
+    <string name="auth_guest_welcome">مرحبًا بك بوضع الزائر! تم تفعيل الصلاحيات الاستعراضية</string>
+    <string name="auth_close">إغلاق</string>
+
+    <!-- General Auth Strings -->
     <string name="login_title">تسجيل الدخول</string>
     <string name="login_subtitle">مرحبًا بك مجددًا في سمارت كوست برو</string>
     <string name="email_label">البريد الإلكتروني</string>

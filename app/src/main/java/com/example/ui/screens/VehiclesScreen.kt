@@ -63,7 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.core.DateUtils
 import com.example.core.MoneyUtils
 import com.example.data.local.entities.VehicleEntity
-import com.example.data.local.entities.VehicleLogEntity
+import com.example.domain.model.VehicleLogItem
 import com.example.domain.model.VehicleSummary
 import com.example.ui.components.EmptyStateCard
 import com.example.ui.theme.BlackPrimary
@@ -94,7 +94,7 @@ fun VehiclesScreen(
 
     var showAddFuelDialog by remember { mutableStateOf(false) }
     var showAddMaintenanceDialog by remember { mutableStateOf(false) }
-    var logToDelete by remember { mutableStateOf<VehicleLogEntity?>(null) }
+    var logToDelete by remember { mutableStateOf<VehicleLogItem?>(null) }
 
     val currentVehicle = vehicles.getOrNull(selectedVehicleIndex)
     val currentSummary = currentVehicle?.let { v ->
@@ -421,7 +421,7 @@ fun VehiclesScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.deleteVehicleLog(log.id)
+                        viewModel.deleteVehicleLog(log.id, log.logType)
                         logToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = FinancialRed)
@@ -485,7 +485,7 @@ private fun VehicleMiniStat(
 
 @Composable
 private fun VehicleLogRow(
-    log: VehicleLogEntity,
+    log: VehicleLogItem,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {

@@ -75,4 +75,10 @@ interface VehicleLogDao {
 
     @Delete
     suspend fun deleteAccidentLog(log: VehicleAccidentLogEntity)
+
+    @Query("DELETE FROM vehicle_fuel_logs WHERE fuelLogId = :id")
+    suspend fun deleteFuelLogById(id: Long)
+
+    @Query("DELETE FROM vehicle_maintenance_logs WHERE maintenanceLogId = :id")
+    suspend fun deleteMaintenanceLogById(id: Long)
 }

@@ -445,6 +445,32 @@ class FinanceViewModel(
         }
     }
 
+    fun deleteVehicleLog(id: Long, logType: String = "") {
+        viewModelScope.launch {
+            repository.deleteVehicleLogById(id, logType)
+        }
+    }
+
+    fun addExpense(
+        amountEgp: String,
+        department: String,
+        subcategory: String,
+        title: String,
+        notes: String = ""
+    ) {
+        val amount = MoneyUtils.parseBigDecimal(amountEgp) ?: BigDecimal.ZERO
+        if (amount > BigDecimal.ZERO) {
+            saveExpense(
+                amount = amount,
+                date = DateUtils.currentEpochMillis(),
+                department = department,
+                category = subcategory,
+                title = title,
+                notes = notes
+            )
+        }
+    }
+
     // Certificates
     fun saveCertificate(
         id: Long = 0,
