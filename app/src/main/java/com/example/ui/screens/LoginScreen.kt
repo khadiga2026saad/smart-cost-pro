@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -60,6 +62,18 @@ fun LoginScreen(
     val showPassword = loginViewModel.showPassword
     val rememberDevice = loginViewModel.rememberDevice
     val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = remember(context) {
+        var current: Context? = context
+        var found: FragmentActivity? = null
+        while (current != null) {
+            if (current is FragmentActivity) {
+                found = current
+                break
+            }
+            current = (current as? ContextWrapper)?.baseContext
+        }
+        found
+    }
     val notice = loginViewModel.notice
     val error = loginViewModel.errorMessage
     val isLoading = loginViewModel.isLoading
@@ -181,7 +195,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(7.dp))
                 Button(
-                    onClick = { (context as? FragmentActivity)?.let { loginViewModel.onLoginClick(it, onLoginClick) } ?: run { android.widget.Toast.makeText(context, "تعذر فتح نافذة المصادقة", android.widget.Toast.LENGTH_SHORT).show() } }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(44.dp),
+                    onClick = { activity?.let { loginViewModel.onLoginClick(it, onLoginClick) } ?: run { android.widget.Toast.makeText(context, "تعذر فتح نافذة المصادقة", android.widget.Toast.LENGTH_SHORT).show() } }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(44.dp),
                     shape = fieldShape, colors = ButtonDefaults.buttonColors(containerColor = DeepSlate),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
@@ -201,7 +215,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(6.dp))
                 Surface(
-                    onClick = { (context as? FragmentActivity)?.let { loginViewModel.onBiometricClick(it, onLoginClick) } ?: run { android.widget.Toast.makeText(context, "تعذر فتح نافذة البصمة", android.widget.Toast.LENGTH_SHORT).show() } }, modifier = Modifier.fillMaxWidth(),
+                    onClick = { activity?.let { loginViewModel.onBiometricClick(it, onLoginClick) } ?: run { android.widget.Toast.makeText(context, "تعذر فتح نافذة البصمة", android.widget.Toast.LENGTH_SHORT).show() } }, modifier = Modifier.fillMaxWidth(),
                     shape = fieldShape, color = GoldLight.copy(alpha = .7f),
                     border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .45f))
                 ) {
@@ -283,7 +297,7 @@ fun LoginScreen(
             confirmButton = {
                 TextButton(
                     enabled = !isLoading,
-                    onClick = { (context as? FragmentActivity)?.let { loginViewModel.registerAccount(confirmPassword, it, onLoginClick) } }
+                    onClick = { activity?.let { loginViewModel.registerAccount(confirmPassword, it, onLoginClick) } }
                 ) { Text(if (isLoading) "جارٍ الإنشاء..." else "إنشاء الحساب") }
             },
             dismissButton = {
