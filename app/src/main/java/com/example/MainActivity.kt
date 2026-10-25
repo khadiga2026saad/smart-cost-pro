@@ -71,6 +71,7 @@ import com.example.ui.theme.GoldDark
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.SmartCostProTheme
 import com.example.ui.viewmodel.FinanceViewModel
+import com.google.firebase.auth.FirebaseAuth
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -123,7 +124,7 @@ fun SmartCostProApp(
     modifier: Modifier = Modifier
 ) {
     // Starts at the single LoginScreen
-    var isInWorkspace by remember { mutableStateOf(false) }
+    var isInWorkspace by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
     var currentScreen by remember { mutableStateOf(Screen.DASHBOARD) }
 
     // Dialog trigger flags when navigating from quick actions
@@ -182,6 +183,7 @@ fun SmartCostProApp(
                     }
                 },
                 onLogout = {
+                    FirebaseAuth.getInstance().signOut()
                     isInWorkspace = false
                 },
                 modifier = modifier
@@ -221,7 +223,10 @@ fun SmartCostProApp(
                             onSearchClick = { showSearchDialog = true },
                             onVoiceClick = { showVoiceDialog = true },
                             onSettingsClick = { },
-                            onLogout = { isInWorkspace = false },
+                            onLogout = {
+                                FirebaseAuth.getInstance().signOut()
+                                isInWorkspace = false
+                            },
                             onHomeClick = { currentScreen = Screen.DASHBOARD }
                         )
 
