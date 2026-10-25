@@ -273,7 +273,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onGuestClick(onEnter: () -> Unit) {
-        // Explicit guest mode is separate from authenticated Firebase sessions.
+        // Do not let guest mode bypass the biometric lock on an authenticated session.
+        if (auth.currentUser != null && preferences.getBoolean("biometric_enabled", false)) {
+            notice = "افتح جلستك بالبصمة أولًا؛ وضع الزائر لا يتجاوز قفل الحساب"
+            return
+        }
         onEnter()
     }
 
