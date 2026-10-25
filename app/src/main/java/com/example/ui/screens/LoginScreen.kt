@@ -63,6 +63,11 @@ fun LoginScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val notice = loginViewModel.notice
     val error = loginViewModel.errorMessage
+    val isLoading = loginViewModel.isLoading
+    val showRegisterDialog = loginViewModel.showRegisterDialog
+    val showForgotPasswordDialog = loginViewModel.showForgotPasswordDialog
+    var confirmPassword by remember { mutableStateOf("") }
+    var resetEmail by remember(username) { mutableStateOf(username) }
     LaunchedEffect(notice, error) {
         (error ?: notice)?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show() }
         if (notice != null) loginViewModel.clearNotice()
@@ -177,11 +182,15 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(16.dp))
                 Button(
-                    onClick = { loginViewModel.onLoginClick(onLoginClick) }, modifier = Modifier.fillMaxWidth().height(50.dp),
+                    onClick = { loginViewModel.onLoginClick(onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = fieldShape, colors = ButtonDefaults.buttonColors(containerColor = DeepSlate),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
-                    Text("تسجيل الدخول", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GoldPrimary)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (isLoading) "جارٍ التحقق..." else "تسجيل الدخول", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.Default.ArrowBack, null, Modifier.size(17.dp), tint = GoldPrimary)
                 }
@@ -211,7 +220,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(10.dp))
                 OutlinedButton(
-                    onClick = { loginViewModel.onGoogleClick() }, modifier = Modifier.fillMaxWidth().height(48.dp),
+                    onClick = { loginViewModel.onGoogleClick(context, onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = fieldShape, border = BorderStroke(1.dp, BorderLight),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceCard)
                 ) {
@@ -235,6 +244,82 @@ fun LoginScreen(
         Text("الدخول كزائر لتصفح النظام", Modifier.clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(8.dp),
             fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondaryDark, textAlign = TextAlign.Center)
         Spacer(Modifier.height(16.dp))
+    }
+
+    if (showRegisterDialog) {
+        AlertDialog(
+            onDismissRequest = { loginViewModel.dismissDialogs(); confirmPassword = "" },
+            title = { Text("إنشاء حساب جديد", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("سيتم إنشاء الحساب في Firebase باستخدام البريد الإلكتروني وكلمة المرور.")
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = loginViewModel::onUsernameChange,
+                        label = { Text("البريد الإلكتروني") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = loginViewModel::onPasswordChange,
+                        label = { Text("كلمة المرور (6 أحرف على الأقل)") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("تأكيد كلمة المرور") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isLoading,
+                    onClick = { loginViewModel.registerAccount(confirmPassword, onLoginClick) }
+                ) { Text(if (isLoading) "جارٍ الإنشاء..." else "إنشاء الحساب") }
+            },
+            dismissButton = {
+                TextButton(onClick = { loginViewModel.dismissDialogs(); confirmPassword = "" }) { Text("إلغاء") }
+            }
+        )
+    }
+
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { loginViewModel.dismissDialogs() },
+            title = { Text("استعادة كلمة المرور", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("أدخل البريد المسجل لإرسال رابط استعادة من Firebase.")
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("البريد الإلكتروني") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !isLoading, onClick = {
+                    loginViewModel.onUsernameChange(resetEmail)
+                    loginViewModel.sendPasswordReset()
+                }) { Text(if (isLoading) "جارٍ الإرسال..." else "إرسال رابط الاستعادة") }
+            },
+            dismissButton = {
+                TextButton(onClick = { loginViewModel.dismissDialogs() }) { Text("إلغاء") }
+            }
+        )
     }
 }
 
