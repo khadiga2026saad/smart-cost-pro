@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.navigation.Screen
-import com.example.ui.screens.AuthScreen
+import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.ExpensesScreen
 import com.example.ui.screens.ExecutiveHeader
@@ -122,7 +122,7 @@ fun SmartCostProApp(
     onToggleLanguage: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Starts at AuthScreen (شاشة الدخول الأولى) as specified
+    // Starts at the single LoginScreen
     var isInWorkspace by remember { mutableStateOf(false) }
     var currentScreen by remember { mutableStateOf(Screen.DASHBOARD) }
 
@@ -131,14 +131,17 @@ fun SmartCostProApp(
     var triggerAddRevenue by remember { mutableStateOf(false) }
 
     if (!isInWorkspace) {
-        // شاشة الدخول الأولى (Executive Login Screen)
-        AuthScreen(
-            onEnterWorkspace = {
+        // شاشة الدخول المعتمدة
+        LoginScreen(
+            onLoginClick = {
                 isInWorkspace = true
                 currentScreen = Screen.DASHBOARD
             },
-            isEnglish = isEnglish,
-            onToggleLanguage = onToggleLanguage,
+            onGuestClick = {
+                isInWorkspace = true
+                currentScreen = Screen.DASHBOARD
+            },
+            onLanguageClick = onToggleLanguage,
             modifier = modifier
         )
     } else {
