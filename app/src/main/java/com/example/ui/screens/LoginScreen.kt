@@ -80,6 +80,8 @@ fun LoginScreen(
     val showRegisterDialog = loginViewModel.showRegisterDialog
     val showForgotPasswordDialog = loginViewModel.showForgotPasswordDialog
     var confirmPassword by remember { mutableStateOf("") }
+    var googlePassword by remember { mutableStateOf("") }
+    var confirmGooglePassword by remember { mutableStateOf("") }
     var resetEmail by remember(username) { mutableStateOf(username) }
     LaunchedEffect(notice, error) {
         (error ?: notice)?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show() }
@@ -334,6 +336,56 @@ fun LoginScreen(
             }
         )
     }
+
+    if (loginViewModel.showGooglePasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { loginViewModel.skipGooglePasswordSetup(); googlePassword = ""; confirmGooglePassword = "" },
+            title = { Text("تعيين كلمة مرور للحساب", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("حساب Google دخل بنجاح. يمكنك إضافة كلمة مرور لتسجيل الدخول بالبريد الإلكتروني أيضًا، وسيظل الحساب نفسه دون إنشاء حساب جديد.")
+                    OutlinedTextField(
+                        value = googlePassword,
+                        onValueChange = { googlePassword = it },
+                        label = { Text("كلمة المرور (6 أحرف على الأقل)") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = confirmGooglePassword,
+                        onValueChange = { confirmGooglePassword = it },
+                        label = { Text("تأكيد كلمة المرور") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isLoading,
+                    onClick = {
+                        loginViewModel.setPasswordForGoogleAccount(googlePassword, confirmGooglePassword)
+                        if (googlePassword.length >= 6 && googlePassword == confirmGooglePassword) {
+                            googlePassword = ""
+                            confirmGooglePassword = ""
+                        }
+                    }
+                ) { Text(if (isLoading) "جارٍ الحفظ..." else "تعيين كلمة المرور") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    loginViewModel.skipGooglePasswordSetup()
+                    googlePassword = ""
+                    confirmGooglePassword = ""
+                }) { Text("لاحقًا") }
+            }
+        )
+    }
+
 }
 
 @Preview(showBackground = true, locale = "ar")

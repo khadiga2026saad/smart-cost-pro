@@ -18,6 +18,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
@@ -46,6 +47,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var showForgotPasswordDialog by mutableStateOf(false)
         private set
+    var showGooglePasswordDialog by mutableStateOf(false)
+        private set
+    private var pendingGoogleSuccess: (() -> Unit)? = null
+    private var pendingGoogleActivity: FragmentActivity? = null
 
     fun onUsernameChange(value: String) {
         username = value.trim()
@@ -67,7 +72,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     fun onLanguageClick() { notice = "تغيير اللغة متاح من زر اللغة أعلى الشاشة" }
     fun onForgotPasswordClick() { errorMessage = null; showForgotPasswordDialog = true }
     fun onRegisterClick() { errorMessage = null; showRegisterDialog = true }
-    fun dismissDialogs() { showRegisterDialog = false; showForgotPasswordDialog = false }
+    fun dismissDialogs() { showRegisterDialog = false; showForgotPasswordDialog = false; showGooglePasswordDialog = false }
 
     fun onBiometricClick(activity: FragmentActivity, onSuccess: () -> Unit) {
         if (auth.currentUser == null) {
@@ -176,8 +181,18 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     .addOnCompleteListener { task ->
                         isLoading = false
                         if (task.isSuccessful && auth.currentUser != null) {
-                            saveRememberedUser(auth.currentUser?.email.orEmpty())
-                            offerBiometricSetup(findFragmentActivity(context), onSuccess)
+                            val user = auth.currentUser!!
+                            saveRememberedUser(user.email.orEmpty())
+                            val hasPasswordProvider = user.providerData.any { it.providerId == EmailAuthProvider.PROVIDER_ID }
+                            if (hasPasswordProvider) {
+                                offerBiometricSetup(findFragmentActivity(context), onSuccess)
+                            } else {
+                                // Keep the same Google-backed Firebase account and add email/password as a linked provider.
+                                pendingGoogleSuccess = onSuccess
+                                pendingGoogleActivity = findFragmentActivity(context)
+                                showGooglePasswordDialog = true
+                                notice = "يمكنك تعيين كلمة مرور للدخول بالبريد الإلكتروني أيضًا"
+                            }
                         } else {
                             errorMessage = task.exception?.localizedMessage ?: "تعذر تسجيل الدخول بحساب Google"
                         }
@@ -193,6 +208,61 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 errorMessage = exception.localizedMessage ?: "حدث خطأ أثناء تسجيل الدخول بحساب Google"
             }
         }
+    }
+
+    fun setPasswordForGoogleAccount(newPassword: String, confirmPassword: String) {
+        if (newPassword.length < 6) {
+            errorMessage = "كلمة المرور يجب ألا تقل عن 6 أحرف"
+            return
+        }
+        if (newPassword != confirmPassword) {
+            errorMessage = "كلمتا المرور غير متطابقتين"
+            return
+        }
+        val user = auth.currentUser
+        val email = user?.email
+        if (user == null || email.isNullOrBlank()) {
+            errorMessage = "انتهت جلسة Google؛ سجّل الدخول مرة أخرى"
+            showGooglePasswordDialog = false
+            return
+        }
+        if (isLoading) return
+        isLoading = true
+        errorMessage = null
+        val credential = EmailAuthProvider.getCredential(email, newPassword)
+        user.linkWithCredential(credential).addOnCompleteListener { task ->
+            isLoading = false
+            if (task.isSuccessful) {
+                showGooglePasswordDialog = false
+                password = ""
+                notice = "تم ربط البريد الإلكتروني وكلمة المرور بنفس حساب Google"
+                val callback = pendingGoogleSuccess
+                val activity = pendingGoogleActivity
+                pendingGoogleSuccess = null
+                pendingGoogleActivity = null
+                if (callback != null) offerBiometricSetup(activity, callback)
+            } else {
+                val raw = task.exception?.message.orEmpty().lowercase()
+                errorMessage = when {
+                    "email already in use" in raw || "credential already in use" in raw ->
+                        "هذا البريد مرتبط بحساب آخر. لم يتم إنشاء حساب مكرر."
+                    "provider already linked" in raw ->
+                        "طريقة الدخول بالبريد وكلمة المرور مرتبطة بالفعل"
+                    "weak password" in raw ->
+                        "كلمة المرور ضعيفة؛ استخدم 6 أحرف على الأقل"
+                    else -> task.exception?.localizedMessage ?: "تعذر ربط كلمة المرور بحساب Google"
+                }
+            }
+        }
+    }
+
+    fun skipGooglePasswordSetup() {
+        showGooglePasswordDialog = false
+        val callback = pendingGoogleSuccess
+        val activity = pendingGoogleActivity
+        pendingGoogleSuccess = null
+        pendingGoogleActivity = null
+        if (callback != null) offerBiometricSetup(activity, callback)
     }
 
     fun onLoginClick(activity: FragmentActivity, onSuccess: () -> Unit) {
