@@ -2,6 +2,7 @@ package com.example.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.ContextWrapper
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -176,7 +177,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         isLoading = false
                         if (task.isSuccessful && auth.currentUser != null) {
                             saveRememberedUser(auth.currentUser?.email.orEmpty())
-                            offerBiometricSetup(context as? FragmentActivity, onSuccess)
+                            offerBiometricSetup(findFragmentActivity(context), onSuccess)
                         } else {
                             errorMessage = task.exception?.localizedMessage ?: "تعذر تسجيل الدخول بحساب Google"
                         }
@@ -277,6 +278,15 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun clearNotice() { notice = null }
+
+    private fun findFragmentActivity(context: Context): FragmentActivity? {
+        var current: Context? = context
+        while (current != null) {
+            if (current is FragmentActivity) return current
+            current = (current as? ContextWrapper)?.baseContext
+        }
+        return null
+    }
 
     private fun saveRememberedUser(email: String) {
         if (rememberDevice) preferences.edit().putString("saved_user", email).apply()
