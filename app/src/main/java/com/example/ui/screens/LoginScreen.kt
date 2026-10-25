@@ -87,7 +87,7 @@ fun LoginScreen(
             Row(
                 Modifier.background(FinancialGreenContainer, CircleShape)
                     .border(1.dp, EmeraldGreen.copy(alpha = .25f), CircleShape)
-                     .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.size(6.dp).background(EmeraldGreen, CircleShape))
@@ -230,7 +230,7 @@ fun LoginScreen(
                     Spacer(Modifier.width(10.dp))
                     Text("متابعة الدخول بحساب Google", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(5.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Text("ليس لديك حساب؟", fontSize = 11.sp, color = TextSecondaryDark)
                     Spacer(Modifier.width(5.dp))
@@ -238,8 +238,8 @@ fun LoginScreen(
                 }
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Text("الدخول كزائر لتصفح النظام", Modifier.clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(8.dp),
+        Spacer(Modifier.height(5.dp))
+        Text("الدخول كزائر لتصفح النظام", Modifier.fillMaxWidth().clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(vertical = 5.dp),
             fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondaryDark, textAlign = TextAlign.Center)
         Spacer(Modifier.height(2.dp))
     }
