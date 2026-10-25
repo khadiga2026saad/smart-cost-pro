@@ -5,12 +5,24 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.R
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.launch
 
-/** UI-only actions; only the remember-device choice and username are persisted. */
+/** Real Firebase Authentication actions for the login screen. */
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val preferences = application.getSharedPreferences("smart_cost_auth_prefs", Context.MODE_PRIVATE)
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val savedRememberDevice = preferences.getBoolean("remember_device", true)
+
     var username by mutableStateOf(if (savedRememberDevice) preferences.getString("saved_user", "") ?: "" else "")
         private set
     var password by mutableStateOf("")
@@ -23,41 +35,182 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var notice by mutableStateOf<String?>(null)
         private set
+    var isLoading by mutableStateOf(false)
+        private set
+    var showRegisterDialog by mutableStateOf(false)
+        private set
+    var showForgotPasswordDialog by mutableStateOf(false)
+        private set
 
     fun onUsernameChange(value: String) {
-        username = value
+        username = value.trim()
         errorMessage = null
-        if (rememberDevice) preferences.edit().putString("saved_user", value).apply()
+        if (rememberDevice) preferences.edit().putString("saved_user", username).apply()
     }
+
     fun onPasswordChange(value: String) { password = value; errorMessage = null }
     fun onPasswordVisibilityClick() { showPassword = !showPassword }
+
     fun onRememberDeviceChange(value: Boolean) {
         rememberDevice = value
-        preferences.edit()
-            .putBoolean("remember_device", value)
-            .apply {
-                if (value) putString("saved_user", username) else remove("saved_user")
-            }
-            .apply()
+        preferences.edit().putBoolean("remember_device", value).apply {
+            if (value) putString("saved_user", username) else remove("saved_user")
+        }.apply()
     }
-    fun onBackClick() { /* TODO: Define back navigation behavior. */ notice = "تم الضغط على الرجوع" }
-    fun onLanguageClick() { /* TODO: Define language-switch behavior. */ notice = "تغيير اللغة قريبًا" }
-    fun onForgotPasswordClick() { /* TODO: Implement recovery. */ notice = "استعادة الرمز قريبًا" }
-    fun onBiometricClick() { /* TODO: Implement biometric authentication. */ notice = "الدخول بالبصمة قريبًا" }
-    fun onGoogleClick() { /* TODO: Implement Google authentication. */ notice = "الدخول بحساب Google قريبًا" }
-    fun onRegisterClick() { /* TODO: Implement registration. */ notice = "إنشاء الحساب قريبًا" }
-    fun onLoginClick(onValid: () -> Unit) {
-        if (username.isBlank() || password.isBlank()) {
-            errorMessage = "من فضلك أدخل اسم المستخدم وكلمة المرور"
+
+    fun onBackClick() { notice = "يمكنك الرجوع من زر الرجوع في الجهاز" }
+    fun onLanguageClick() { notice = "تغيير اللغة متاح من زر اللغة أعلى الشاشة" }
+    fun onForgotPasswordClick() { errorMessage = null; showForgotPasswordDialog = true }
+    fun onRegisterClick() { errorMessage = null; showRegisterDialog = true }
+    fun dismissDialogs() { showRegisterDialog = false; showForgotPasswordDialog = false }
+
+    fun onBiometricClick() {
+        notice = if (auth.currentUser != null) {
+            "جلسة Firebase نشطة بالفعل على هذا الجهاز"
+        } else {
+            "الدخول بالبصمة يحتاج إعداد قفل محلي آمن بعد تسجيل الدخول أول مرة"
+        }
+    }
+
+    fun onGoogleClick(context: Context, onSuccess: () -> Unit) {
+        if (isLoading) return
+        isLoading = true
+        errorMessage = null
+        viewModelScope.launch {
+            try {
+                val googleOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(context.getString(R.string.default_web_client_id))
+                    .setAutoSelectEnabled(false)
+                    .build()
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleOption)
+                    .build()
+                val result = CredentialManager.create(context).getCredential(context, request)
+                val googleCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
+                val firebaseCredential = GoogleAuthProvider.getCredential(googleCredential.idToken, null)
+                auth.signInWithCredential(firebaseCredential)
+                    .addOnCompleteListener { task ->
+                        isLoading = false
+                        if (task.isSuccessful && auth.currentUser != null) {
+                            saveRememberedUser(auth.currentUser?.email.orEmpty())
+                            onSuccess()
+                        } else {
+                            errorMessage = task.exception?.localizedMessage ?: "تعذر تسجيل الدخول بحساب Google"
+                        }
+                    }
+            } catch (exception: GetCredentialException) {
+                isLoading = false
+                errorMessage = when (exception) {
+                    is androidx.credentials.exceptions.GetCredentialCancellationException -> "تم إلغاء تسجيل الدخول بحساب Google"
+                    else -> exception.localizedMessage ?: "تعذر الحصول على بيانات حساب Google"
+                }
+            } catch (exception: Exception) {
+                isLoading = false
+                errorMessage = exception.localizedMessage ?: "حدث خطأ أثناء تسجيل الدخول بحساب Google"
+            }
+        }
+    }
+
+    fun onLoginClick(onSuccess: () -> Unit) {
+        val email = username.trim()
+        if (email.isBlank() || password.isBlank()) {
+            errorMessage = "من فضلك أدخل البريد الإلكتروني وكلمة المرور"
             return
         }
+        if (!email.contains("@")) {
+            errorMessage = "أدخل بريدًا إلكترونيًا صحيحًا"
+            return
+        }
+        if (isLoading) return
+        isLoading = true
         errorMessage = null
-        // TODO: TEMPORARY prototype behavior: non-empty fields grant entry; implement real authentication before release.
-        onValid()
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                isLoading = false
+                if (task.isSuccessful && auth.currentUser != null) {
+                    saveRememberedUser(email)
+                    password = ""
+                    onSuccess()
+                } else {
+                    errorMessage = authError(task.exception?.message, isRegistration = false)
+                }
+            }
     }
+
+    fun registerAccount(confirmPassword: String, onSuccess: () -> Unit) {
+        val email = username.trim()
+        if (email.isBlank() || !email.contains("@")) {
+            errorMessage = "أدخل بريدًا إلكترونيًا صحيحًا"
+            return
+        }
+        if (password.length < 6) {
+            errorMessage = "كلمة المرور يجب ألا تقل عن 6 أحرف"
+            return
+        }
+        if (password != confirmPassword) {
+            errorMessage = "كلمتا المرور غير متطابقتين"
+            return
+        }
+        if (isLoading) return
+        isLoading = true
+        errorMessage = null
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                isLoading = false
+                if (task.isSuccessful && auth.currentUser != null) {
+                    saveRememberedUser(email)
+                    password = ""
+                    showRegisterDialog = false
+                    onSuccess()
+                } else {
+                    errorMessage = authError(task.exception?.message, isRegistration = true)
+                }
+            }
+    }
+
+    fun sendPasswordReset() {
+        val email = username.trim()
+        if (email.isBlank() || !email.contains("@")) {
+            errorMessage = "أدخل بريدك الإلكتروني المسجل أولًا"
+            return
+        }
+        if (isLoading) return
+        isLoading = true
+        errorMessage = null
+        auth.sendPasswordResetEmail(email).addOnCompleteListener { task ->
+            isLoading = false
+            if (task.isSuccessful) {
+                showForgotPasswordDialog = false
+                notice = "لو البريد مسجل، هيوصلك رابط استعادة كلمة المرور"
+            } else {
+                errorMessage = authError(task.exception?.message, isRegistration = false)
+            }
+        }
+    }
+
     fun onGuestClick(onEnter: () -> Unit) {
-        // TODO: Define guest access permissions.
+        // Explicit guest mode is separate from authenticated Firebase sessions.
         onEnter()
     }
+
     fun clearNotice() { notice = null }
+
+    private fun saveRememberedUser(email: String) {
+        if (rememberDevice) preferences.edit().putString("saved_user", email).apply()
+    }
+
+    private fun authError(message: String?, isRegistration: Boolean): String {
+        val code = message.orEmpty().lowercase()
+        return when {
+            "email address is badly formatted" in code -> "صيغة البريد الإلكتروني غير صحيحة"
+            "no user record" in code || "user not found" in code -> "لا يوجد حساب مسجل بهذا البريد"
+            "wrong password" in code || "invalid credential" in code || "password is invalid" in code ->
+                "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+            "email address is already in use" in code -> "هذا البريد مسجل بالفعل"
+            "weak password" in code -> "كلمة المرور ضعيفة؛ استخدم 6 أحرف على الأقل"
+            "network" in code -> "تعذر الاتصال بالإنترنت؛ حاول مرة أخرى"
+            else -> message ?: if (isRegistration) "تعذر إنشاء الحساب" else "تعذر تسجيل الدخول"
+        }
+    }
 }
