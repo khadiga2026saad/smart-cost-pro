@@ -256,15 +256,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun skipGooglePasswordSetup() {
-        showGooglePasswordDialog = false
-        val callback = pendingGoogleSuccess
-        val activity = pendingGoogleActivity
-        pendingGoogleSuccess = null
-        pendingGoogleActivity = null
-        if (callback != null) offerBiometricSetup(activity, callback)
-    }
-
     fun onLoginClick(activity: FragmentActivity, onSuccess: () -> Unit) {
         val email = username.trim()
         if (email.isBlank() || password.isBlank()) {
