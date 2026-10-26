@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -163,7 +164,12 @@ data class GatewayActionItem(
  * - شبكة بوابات الوصول السريع الثمانية (8-Gateway Action Grid)
  * - زر العمليات السريعة FAB وشريط التنقل السفلي الفاخر (Bottom Navigation)
  */
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+/**
+ * Approved home layout: one gateway to the costs/expenses section.
+ * Other surfaces are read-only indicators, not navigation cards.
+ * Financial values are sourced from FinanceViewModel; no Stitch demo figures.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: FinanceViewModel? = null,
@@ -171,356 +177,171 @@ fun HomeScreen(
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Current live time & date state
-    var currentTimeString by remember { mutableStateOf("") }
-    var currentDateString by remember { mutableStateOf("") }
-
+    var now by remember { mutableStateOf(Date()) }
     LaunchedEffect(Unit) {
-        val timeFormat = SimpleDateFormat("hh:mm a", Locale("ar"))
-        val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("ar"))
-        while (true) {
-            val now = Date()
-            currentTimeString = timeFormat.format(now)
-            currentDateString = dateFormat.format(now)
-            delay(1000L)
-        }
+        while (true) { now = Date(); delay(1000L) }
     }
-
-    // Interactive Dialogs & Sheets states
-    var showSearchDialog by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var showVoiceDialog by remember { mutableStateOf(false) }
-    var showOverflowMenu by remember { mutableStateOf(false) }
-    var showQuickCostSheet by remember { mutableStateOf(false) }
-    var showAdvisorDialog by remember { mutableStateOf(false) }
-    var selectedBottomNavIndex by remember { mutableIntStateOf(0) }
-    val gridState = rememberLazyGridState()
-    val coroutineScope = rememberCoroutineScope()
-
-    // Financial calculations from ViewModel or executive defaults
-    val summary = viewModel?.currentMonthSummary?.collectAsStateWithLifecycle()?.value ?: com.example.domain.model.FinancialSummary()
-    val formattedBalance = if (summary.currentLiquidBalancePiastres > 0L) {
-        MoneyUtils.formatPiastres(summary.currentLiquidBalancePiastres)
-    } else {
-        "485,250.00 ج.م"
-    }
-    val formattedExpenses = if (summary.totalExpensesPiastres > 0L) {
-        MoneyUtils.formatPiastres(summary.totalExpensesPiastres)
-    } else {
-        "135,800.00 ج.م"
-    }
-    val formattedRevenue = if (summary.totalRevenuesPiastres > 0L) {
-        MoneyUtils.formatPiastres(summary.totalRevenuesPiastres)
-    } else {
-        "621,050.00 ج.م"
-    }
-
-    // 8-Gateway Action Grid Items
-    val gatewayItems = remember {
-        listOf(
-            GatewayActionItem(
-                id = "income_accounts",
-                title = "الدخل والحسابات",
-                subtitle = "الودائع والتدفقات النقدية",
-                icon = Icons.Default.AttachMoney,
-                badge = "+14%",
-                isPrimary = true
-            ),
-            GatewayActionItem(
-                id = "daily_expenses",
-                title = "المصروفات اليومية",
-                subtitle = "تسجيل الفواتير اللحظية",
-                icon = Icons.Default.CreditCard,
-                badge = "مباشر"
-            ),
-            GatewayActionItem(
-                id = "budgets",
-                title = "الموازنة التقديرية",
-                subtitle = "متابعة الأسقف والانحراف",
-                icon = Icons.Default.PieChart,
-                badge = "65% استهلاك"
-            ),
-            GatewayActionItem(
-                id = "project_costing",
-                title = "تكاليف المشاريع",
-                subtitle = "العقود والمراحل والمشتريات",
-                icon = Icons.Default.Store
-            ),
-            GatewayActionItem(
-                id = "reports_analytics",
-                title = "التقارير والـ PDF",
-                subtitle = "تصدير القوائم التنفيذية",
-                icon = Icons.Default.Description,
-                badge = "جاهز"
-            ),
-            GatewayActionItem(
-                id = "vendors_clients",
-                title = "العملاء والموردين",
-                subtitle = "الذمم الدائنة والمدينة",
-                icon = Icons.Default.Group
-            ),
-            GatewayActionItem(
-                id = "ai_advisor",
-                title = "المستشار المالي الذكي",
-                subtitle = "توصيات خفض الهدر المالي",
-                icon = Icons.Default.AutoAwesome,
-                badge = "نشط",
-                isPrimary = true
-            ),
-            GatewayActionItem(
-                id = "settings_backup",
-                title = "إعدادات النظام",
-                subtitle = "النسخ الاحتياطي والصلاحيات",
-                icon = Icons.Default.Settings
-            )
-        )
-    }
+    val time = remember(now) { SimpleDateFormat("hh:mm:ss a", Locale("ar")).format(now) }
+    val date = remember(now) { SimpleDateFormat("d MMMM yyyy", Locale("ar")).format(now) }
+    val summary = viewModel?.currentMonthSummary?.collectAsStateWithLifecycle()?.value
+    val income = summary?.let { MoneyUtils.formatPiastres(it.totalRevenuesPiastres) } ?: "—"
+    val expenses = summary?.let { MoneyUtils.formatPiastres(it.totalExpensesPiastres) } ?: "—"
+    val balance = summary?.let { MoneyUtils.formatPiastres(it.currentLiquidBalancePiastres) } ?: "—"
+    var showMenu by remember { mutableStateOf(false) }
+    val ink = Color(0xFF0B1528)
+    val pale = Color(0xFFF8FAFC)
+    val cyan = Color(0xFF06B6D4)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = BackgroundWhite,
-        floatingActionButton = {
-            // Gold Gradient Floating Action Button for "تسجيل تكلفة سريعة"
-            Box(
-                modifier = Modifier
-                    .shadow(12.dp, RoundedCornerShape(20.dp), spotColor = GoldDark)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(GoldGradientStart, GoldGradientEnd)
-                        )
-                    )
-                    .clickable { showQuickCostSheet = true }
-                    .padding(horizontal = 20.dp, vertical = 14.dp)
-                    .testTag("fab_quick_cost"),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "تسجيل تكلفة سريعة",
-                        tint = DeepSlate,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "تسجيل تكلفة سريعة",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = DeepSlate
-                        )
-                    )
-                }
-            }
-        },
+        containerColor = pale,
         bottomBar = {
-            // Executive Bottom Navigation Bar
-            NavigationBar(
-                containerColor = SurfaceCrispWhite,
-                contentColor = DeepSlate,
-                tonalElevation = 8.dp,
-                modifier = Modifier
-                    .border(BorderStroke(1.dp, BorderLight))
-                    .testTag("home_bottom_nav")
-            ) {
-                val navItems = listOf(
-                    Triple("الرئيسية", Icons.Default.Home, 0),
-                    Triple("العمليات", Icons.Default.ReceiptLong, 1),
-                    Triple("التحليلات", Icons.Default.Analytics, 2),
-                    Triple("المزيد", Icons.Default.MoreHoriz, 3)
-                )
-
-                navItems.forEach { (label, icon, index) ->
-                    val isSelected = selectedBottomNavIndex == index
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            selectedBottomNavIndex = index
-                            when (index) {
-                                1 -> onNavigateToGateway("daily_expenses")
-                                2 -> onNavigateToGateway("reports_analytics")
-                                3 -> onNavigateToGateway("settings_backup")
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = label,
-                                tint = if (isSelected) DeepSlate else TextSecondaryDark
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = label,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) DeepSlate else TextSecondaryDark,
-                                fontSize = 12.sp
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = GoldPrimary,
-                            selectedIconColor = DeepSlate,
-                            selectedTextColor = DeepSlate,
-                            unselectedIconColor = TextSecondaryDark,
-                            unselectedTextColor = TextSecondaryDark
-                        ),
-                        modifier = Modifier.testTag("nav_item_$index")
-                    )
-                }
+            NavigationBar(containerColor = Color.White, modifier = Modifier.testTag("home_bottom_nav")) {
+                NavigationBarItem(selected = true, onClick = {}, icon = { Icon(Icons.Default.Home, null) }, label = { Text("الرئيسية") })
+                NavigationBarItem(selected = false, onClick = { onNavigateToGateway("expenses") }, icon = { Icon(Icons.Default.ReceiptLong, null) }, label = { Text("التكاليف") })
+                NavigationBarItem(selected = false, onClick = { onNavigateToGateway("expenses") }, icon = { Icon(Icons.Default.PieChart, null) }, label = { Text("الملخص") })
+                NavigationBarItem(selected = false, onClick = { showMenu = true }, icon = { Icon(Icons.Default.Person, null) }, label = { Text("الحساب") })
             }
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(BackgroundWhite)
-        ) {
-            // الشريط العلوي (ثابت لا يتحرك عند التمرير)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                ExecutiveHeader(
-                    timeString = currentTimeString,
-                    dateString = currentDateString,
-                    onSearchClick = { showSearchDialog = true },
-                    onVoiceClick = { showVoiceDialog = true },
-                    onSettingsClick = { showOverflowMenu = true },
-                    onLogout = onLogout,
-                    onHomeClick = {
-                        coroutineScope.launch {
-                            gridState.animateScrollToItem(0)
+    ) { insets ->
+        Column(Modifier.fillMaxSize().padding(insets).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+            Column(Modifier.fillMaxWidth().background(pale).padding(horizontal = 14.dp, vertical = 12.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(42.dp).clip(CircleShape).background(Color(0xFFE0F2FE)).border(2.dp, cyan, CircleShape), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Person, contentDescription = "الحساب", tint = ink)
+                        }
+                        Spacer(Modifier.width(7.dp))
+                        Column {
+                            Text("مرحباً بك", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = ink)
+                            Text("لوحة الإدارة المالية", fontSize = 10.sp, color = cyan)
                         }
                     }
-                )
-            }
-
-
-            // شريط التنبيهات والأخبار المالي المتحرك (ثابت لا يتحرك عند التمرير)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-            ) {
-                LiveFinancialTickerBar()
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // بقية محتويات الشاشة القابلة للتمرير (البطاقات والشبكة)
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                state = gridState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .testTag("home_lazy_grid"),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 90.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // 3. Financial Summary / KPI Cards (بطاقات المؤشرات التنفيذية)
-                item(span = { GridItemSpan(2) }) {
-                    FinancialSummaryKpiSection(
-                        operationalBalance = formattedBalance,
-                        totalIncome = formattedRevenue,
-                        totalExpenses = formattedExpenses
-                    )
-                }
-
-                // 4. Section Title for 8-Gateway Grid
-                item(span = { GridItemSpan(2) }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp, bottom = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(4.dp, 18.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(GoldPrimary)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "بوابات الوصول السريع (8-Gateways)",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = DeepSlate
-                                )
-                            )
+                    Icon(Icons.Default.Shield, contentDescription = "الحالة", tint = cyan, modifier = Modifier.size(18.dp))
+                    Column(Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White).border(1.dp, BorderLight, RoundedCornerShape(12.dp)).padding(horizontal = 7.dp, vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(time, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ink)
+                        Text(date, fontSize = 9.sp, color = SlateMedium)
+                    }
+                    Box {
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Settings, contentDescription = "الإعدادات", tint = ink)
                         }
-
-                        Text(
-                            text = "نظام التكلفة الشامل",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondaryDark,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        )
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(text = { Text("تسجيل الخروج") }, onClick = { showMenu = false; onLogout() })
+                        }
                     }
                 }
-
-                // 5. 8-Gateway Action Grid items
-                items(gatewayItems) { item ->
-                    GatewayCard(
-                        item = item,
-                        onClick = {
-                            if (item.id == "ai_advisor") {
-                                showAdvisorDialog = true
-                            } else {
-                                onNavigateToGateway(item.id)
-                            }
+                Spacer(Modifier.height(12.dp))
+                ApprovedHomeTicker()
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(7.dp).background(GoldPrimary, CircleShape))
+                Spacer(Modifier.width(6.dp))
+                Text("نظام المراقبة المالية", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ink)
+                Text("  •  FINANCIAL MONITORING", fontSize = 9.sp, color = SlateMedium)
+            }
+            Spacer(Modifier.height(12.dp))
+            Surface(Modifier.fillMaxWidth(), color = Color.White, shadowElevation = 3.dp) {
+                Column(Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Analytics, null, tint = GoldDark)
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Cost Estimation", fontSize = 19.sp, fontWeight = FontWeight.Black, color = ink)
+                            Text("مؤشرات تقدير ومتابعة التكاليف", fontSize = 11.sp, color = SlateMedium)
                         }
-                    )
+                        Text("ملخص مالي", color = EmeraldGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("تُحتسب المؤشرات من بيانات البرنامج عند توفرها؛ لا تُعرض نسب توقعية دون معادلات معتمدة.", fontSize = 10.sp, color = SlateMedium)
                 }
             }
+            Spacer(Modifier.height(14.dp))
+            Surface(
+                onClick = { onNavigateToGateway("expenses") },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp).testTag("costs_only_gateway"),
+                shape = RoundedCornerShape(16.dp), color = ink, shadowElevation = 7.dp
+            ) {
+                Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(GoldDark), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.AttachMoney, contentDescription = null, tint = Color.White)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("دخول قسم التكاليف", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("إدارة الميزانيات والمصروفات والتدفقات المالية", color = Color(0xFFCBD5E1), fontSize = 10.sp)
+                    }
+                    Icon(Icons.Default.ArrowDownward, contentDescription = "فتح أفرع التكاليف", tint = GoldPrimary)
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                HomeReadOnlyIndicator("الدخل الشهري", income, EmeraldGreen, Modifier.weight(1f))
+                HomeReadOnlyIndicator("المصروفات الشهرية", expenses, CoralRed, Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(10.dp))
+            Surface(Modifier.fillMaxWidth().padding(horizontal = 14.dp), shape = RoundedCornerShape(16.dp), color = Color.White, border = BorderStroke(1.dp, BorderLight)) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CreditCard, null, tint = GoldDark)
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("الرصيد الجاري", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = ink)
+                            Text("Current Balance & Liquidity", fontSize = 10.sp, color = SlateMedium)
+                        }
+                        Text("مؤشر مالي", fontSize = 10.sp, color = cyan)
+                    }
+                    Spacer(Modifier.height(13.dp))
+                    Text(balance, fontSize = 24.sp, fontWeight = FontWeight.Black, color = ink)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Surface(Modifier.fillMaxWidth().padding(horizontal = 14.dp), shape = RoundedCornerShape(10.dp), color = Color.White, border = BorderStroke(1.dp, BorderLight)) {
+                Text("التصدير المالي: يُفعّل بعد تنفيذ تقارير قسم التكاليف", Modifier.padding(11.dp), textAlign = TextAlign.Center, fontSize = 11.sp, color = SlateMedium)
+            }
+            Spacer(Modifier.height(18.dp))
         }
     }
+}
 
-    // Search Dialog
-    if (showSearchDialog) {
-        SearchDialog(
-            query = searchQuery,
-            onQueryChange = { searchQuery = it },
-            onDismiss = { showSearchDialog = false }
-        )
-    }
-
-    // Voice Command Dialog Simulation
-    if (showVoiceDialog) {
-        VoiceSearchDialog(onDismiss = { showVoiceDialog = false })
-    }
-
-    // AI Advisor Recommendations Dialog
-    if (showAdvisorDialog) {
-        AiAdvisorDialog(onDismiss = { showAdvisorDialog = false })
-    }
-
-    // Quick Cost Registration Bottom Sheet
-    if (showQuickCostSheet) {
-        QuickCostBottomSheet(
-            onDismiss = { showQuickCostSheet = false },
-            onCostSaved = { amount, category, desc ->
-                // Save through ViewModel or notify user
-                viewModel?.addExpense(
-                    amountEgp = amount,
-                    department = category,
-                    subcategory = "تسجيل سريع",
-                    title = desc.ifEmpty { "مصروف سريع من الشاشة الرئيسية" },
-                    notes = "سُجل من بوابة FAB السريعة"
-                )
-                showQuickCostSheet = false
+@Composable
+private fun HomeReadOnlyIndicator(title: String, value: String, accent: Color, modifier: Modifier = Modifier) {
+    Surface(modifier, shape = RoundedCornerShape(14.dp), color = Color.White, border = BorderStroke(1.dp, BorderLight)) {
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(7.dp).background(accent, CircleShape))
+                Spacer(Modifier.width(5.dp))
+                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = DeepSlate)
             }
-        )
+            Spacer(Modifier.height(6.dp))
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = accent)
+        }
+    }
+}
+
+/** Logo is fixed on the RTL right; text scrolls physically left to right toward it. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ApprovedHomeTicker() {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFE6F4FA), border = BorderStroke(1.dp, Color(0xFFBAE6FD))) {
+            Row(Modifier.padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                Image(painterResource(R.drawable.ic_smart_cost_logo), contentDescription = "الشعار الرسمي", modifier = Modifier.size(38.dp), contentScale = ContentScale.Fit)
+                Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = Color(0xFF0891B2), modifier = Modifier.size(14.dp))
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Surface(Modifier.weight(1f), shape = RoundedCornerShape(14.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFE9D5FF))) {
+            // RTL marquee reverses the default physical direction: left to right.
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                Text(
+                    "✦ SMART COST PRO • نظام المراقبة المالية • تابع بيانات التكاليف من أفرع القسم • ",
+                    modifier = Modifier.fillMaxWidth().padding(10.dp).basicMarquee(iterations = Int.MAX_VALUE, velocity = 35.dp),
+                    maxLines = 1, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = DeepSlate
+                )
+            }
+        }
     }
 }
 
