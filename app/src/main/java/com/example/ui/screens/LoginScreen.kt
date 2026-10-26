@@ -8,6 +8,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,7 +92,9 @@ fun LoginScreen(
     val fieldShape = RoundedCornerShape(12.dp)
     Column(
         modifier = modifier.fillMaxSize().background(Color(0xFFF9F9FF))
-            .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp),
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -102,23 +106,22 @@ fun LoginScreen(
                 Icon(Icons.Default.ArrowForward, contentDescription = "رجوع", tint = SlateLight)
             }
             Row(
-                Modifier.background(FinancialGreenContainer, CircleShape)
-                    .border(1.dp, EmeraldGreen.copy(alpha = .25f), CircleShape)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                Modifier.background(Color(0xFFF0F3FF), CircleShape)
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.size(6.dp).background(EmeraldGreen, CircleShape))
                 Spacer(Modifier.width(6.dp))
-                Text("نظام مشفر آمن", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF047857))
+                
             }
-            Surface(onClick = { loginViewModel.onLanguageClick() }, shape = CircleShape, color = GoldLight, border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .4f))) {
+            Surface(onClick = { onLanguageClick() }, shape = CircleShape, color = GoldLight, border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .4f))) {
                 Text("◎ EN", Modifier.padding(horizontal = 9.dp, vertical = 4.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
             }
         }
         Image(
             painter = painterResource(id = R.drawable.ic_smart_cost_logo),
             contentDescription = "الشعار الرسمي لتطبيق سمارت كوست برو",
-            modifier = Modifier.fillMaxWidth().height(88.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 150.dp),
             contentScale = ContentScale.Fit
         )
         Text("منظومة الإدارة والتكاليف التنفيذية الذكية", fontSize = 10.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
@@ -130,7 +133,7 @@ fun LoginScreen(
                 Text("eng.mamdouh saad", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SlateLight)
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(14.dp))
         Surface(
             modifier = Modifier.fillMaxWidth().widthIn(max = 448.dp),
             shape = RoundedCornerShape(24.dp),
@@ -193,7 +196,7 @@ fun LoginScreen(
                             colors = CheckboxDefaults.colors(checkedColor = GoldDark))
                         Text("تذكر هذا الجهاز الآمن", fontSize = 11.sp, color = TextSecondaryDark)
                     }
-                    Text("استعادة الرمز؟", Modifier.clickable(onClick = { loginViewModel.onForgotPasswordClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+                    Text("استعادة كلمة المرور / الرمز؟", Modifier.clickable(onClick = { loginViewModel.onForgotPasswordClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
                 }
                 Spacer(Modifier.height(7.dp))
                 Button(
@@ -228,7 +231,7 @@ fun LoginScreen(
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text("الدخول السريع عبر Face ID / البصمة", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = DeepSlate)
-                            Text("التحقق البيومتري المعتمد", fontSize = 10.sp, color = TextSecondaryDark)
+                            Text("التحقق البيومتري الآمن على جهاز Android", fontSize = 10.sp, color = TextSecondaryDark)
                         }
                         Icon(Icons.Default.ArrowBack, null, Modifier.size(15.dp), tint = GoldDark)
                     }
@@ -245,20 +248,20 @@ fun LoginScreen(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("متابعة الدخول بحساب Google", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
-                }
-                Spacer(Modifier.height(5.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    Text("ليس لديك حساب؟", fontSize = 11.sp, color = TextSecondaryDark)
-                    Spacer(Modifier.width(5.dp))
-                    Text("سجل الآن", Modifier.clickable(onClick = { loginViewModel.onRegisterClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+                    Text("الدخول بحساب Google", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
             }
         }
+        Spacer(Modifier.height(18.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Text("ليس لديك حساب؟", fontSize = 11.sp, color = TextSecondaryDark)
+            Spacer(Modifier.width(5.dp))
+            Text("سجل الآن", Modifier.clickable(onClick = { loginViewModel.onRegisterClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+        }
         Spacer(Modifier.height(5.dp))
-        Text("الدخول كزائر لتصفح النظام", Modifier.fillMaxWidth().clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(vertical = 5.dp),
+        Text("الدخول كزائر", Modifier.fillMaxWidth().clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(vertical = 5.dp),
             fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondaryDark, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(12.dp))
     }
 
     if (showRegisterDialog) {
