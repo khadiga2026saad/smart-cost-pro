@@ -63,6 +63,7 @@ import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.ExpensesScreen
 import com.example.ui.screens.ExecutiveHeader
+import com.example.ui.screens.MainCategoriesScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LiveFinancialTickerBar
 import com.example.ui.screens.ReportsScreen
@@ -155,6 +156,7 @@ fun SmartCostProApp(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     var currentScreen by remember { mutableStateOf(Screen.DASHBOARD) }
+    var showingCostCategories by remember { mutableStateOf(false) }
 
     // Dialog trigger flags when navigating from quick actions
     var triggerAddExpense by remember { mutableStateOf(false) }
@@ -166,22 +168,44 @@ fun SmartCostProApp(
             onLoginClick = {
                 isInWorkspace = true
                 currentScreen = Screen.DASHBOARD
+                showingCostCategories = false
             },
             onGuestClick = {
                 isInWorkspace = true
                 currentScreen = Screen.DASHBOARD
+                showingCostCategories = false
             },
             onLanguageClick = onToggleLanguage,
             modifier = modifier
         )
     } else {
         // Handle Android system Back button: if not on DASHBOARD, return to DASHBOARD
-        BackHandler(enabled = currentScreen != Screen.DASHBOARD) {
-            currentScreen = Screen.DASHBOARD
+        BackHandler(enabled = showingCostCategories || currentScreen != Screen.DASHBOARD) {
+            if (showingCostCategories) showingCostCategories = false
+            else currentScreen = Screen.DASHBOARD
         }
 
         // When on DASHBOARD, HomeScreen provides its full dedicated Executive Header & Navigation
-        if (currentScreen == Screen.DASHBOARD) {
+        if (showingCostCategories) {
+            MainCategoriesScreen(
+                viewModel = viewModel,
+                onNavigateBack = { showingCostCategories = false; currentScreen = Screen.DASHBOARD },
+                onCategoryClick = { id ->
+                    // Financial submodules will be connected after their logic is audited.
+                    // Existing implemented screens remain accessible where applicable.
+                    when (id) {
+                        "my_car" -> { showingCostCategories = false; currentScreen = Screen.VEHICLES }
+                        "income_certificates" -> { showingCostCategories = false; currentScreen = Screen.REVENUES }
+                        "reports" -> { showingCostCategories = false; currentScreen = Screen.REPORTS }
+                        "personal_expenses", "home_expenses", "education" -> {
+                            showingCostCategories = false; currentScreen = Screen.EXPENSES
+                        }
+                    }
+                },
+                onAddNewCategory = { /* Requires approved category persistence before activation. */ },
+                onLogout = { FirebaseAuth.getInstance().signOut(); isInWorkspace = false; showingCostCategories = false }
+            )
+        } else if (currentScreen == Screen.DASHBOARD) {
             HomeScreen(
                 viewModel = viewModel,
                 onNavigateToGateway = { gatewayId ->
@@ -191,7 +215,7 @@ fun SmartCostProApp(
                             triggerAddRevenue = false
                         }
                         "daily_expenses", "expenses" -> {
-                            currentScreen = Screen.EXPENSES
+                            showingCostCategories = true
                             triggerAddExpense = false
                         }
                         "vehicles" -> {
