@@ -128,13 +128,13 @@ fun LoginScreen(
         Image(
             painter = painterResource(id = R.drawable.ic_smart_cost_logo),
             contentDescription = "الشعار الرسمي لتطبيق سمارت كوست برو",
-            modifier = Modifier.fillMaxWidth().widthIn(max = 448.dp).heightIn(max = 192.dp).height(160.dp),
+            modifier = Modifier.fillMaxWidth().widthIn(max = 448.dp).height(230.dp),
             contentScale = ContentScale.Fit
         )
-        Text("منظومة الإدارة والتكاليف التنفيذية الذكية", fontSize = 10.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(4.dp))
+        Text("منظومة الإدارة والتكاليف التنفيذية الذكية", fontSize = 11.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(6.dp))
         Surface(shape = CircleShape, color = SurfaceWhite, border = BorderStroke(1.dp, BorderLight), shadowElevation = 2.dp) {
-            Row(Modifier.padding(horizontal = 10.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Shield, null, Modifier.size(12.dp), tint = GoldPrimary)
                 Spacer(Modifier.width(6.dp))
                 Text("eng.mamdouh saad", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SlateLight)
@@ -262,15 +262,48 @@ fun LoginScreen(
             }
         }
         Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        Row(Modifier.fillMaxWidth().widthIn(max = 448.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Text("ليس لديك حساب؟", fontSize = 11.sp, color = TextSecondaryDark)
             Spacer(Modifier.width(5.dp))
             Text("سجل الآن", Modifier.clickable(onClick = { loginViewModel.onRegisterClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
         }
-        Spacer(Modifier.height(5.dp))
-        Text("الدخول كزائر", Modifier.fillMaxWidth().clickable(onClick = { loginViewModel.onGuestClick(onGuestClick) }).padding(vertical = 5.dp),
-            fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondaryDark, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
+        // Guest Login Tab with circular logo badge (كورة بها شعار البرنامج)
+        Surface(
+            onClick = { loginViewModel.onGuestClick(onGuestClick) },
+            modifier = Modifier.fillMaxWidth().widthIn(max = 448.dp),
+            shape = RoundedCornerShape(14.dp),
+            color = SurfaceWhite,
+            border = BorderStroke(1.dp, BorderLight),
+            shadowElevation = 2.dp
+        ) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(GoldLight.copy(alpha = 0.6f), CircleShape)
+                        .border(1.dp, GoldPrimary.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_smart_cost_logo),
+                        contentDescription = "شعار التطبيق",
+                        modifier = Modifier.size(28.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("الدخول كزائر", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = DeepSlate)
+                    Text("استعراض النظام دون الحاجة لحساب", fontSize = 10.sp, color = TextSecondaryDark)
+                }
+                Icon(Icons.Default.ArrowBack, null, Modifier.size(16.dp), tint = GoldDark)
+            }
+        }
+        Spacer(Modifier.height(16.dp))
     }
 
     if (showRegisterDialog) {
