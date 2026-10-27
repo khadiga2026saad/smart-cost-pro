@@ -1,0 +1,134 @@
+<resources>
+    <string name="app_name">Smart Cost Pro</string>
+    <string name="app_name_ar">Smart Cost Pro</string>
+    <string name="app_tagline">Gestion financière intelligente et dépenses</string>
+    
+    <!-- Auth Screen Exact Copy & Matching Requirements -->
+    <string name="auth_app_title_first">Smart Cost</string>
+    <string name="auth_app_title_pro">Pro</string>
+    <string name="auth_app_tagline">Système intelligent de gestion des coûts</string>
+    <string name="auth_verified_user_badge">eng.mamdouh saad</string>
+    <string name="auth_input_user_label">Nom d’utilisateur ou adresse e-mail</string>
+    <string name="auth_input_user_placeholder">Ex. : CEO@smartcost.pro ou 29401</string>
+    <string name="auth_input_password_label">Mot de passe chiffré</string>
+    <string name="auth_input_password_aes">AES-256 bit</string>
+    <string name="auth_remember_secure_device">Se souvenir de cet appareil sécurisé</string>
+    <string name="auth_forgot_password">Mot de passe / code oublié ?</string>
+    <string name="auth_btn_login">Se connecter</string>
+    <string name="auth_or_quick_login">ou connexion rapide</string>
+    <string name="auth_card_biometric_title">Connexion rapide par reconnaissance faciale / empreinte</string>
+    <string name="auth_card_biometric_desc">Vérification biométrique certifiée</string>
+    <string name="auth_btn_google">Se connecter avec Google</string>
+    <string name="auth_dont_have_account">Vous n’avez pas de compte ?</string>
+    <string name="auth_register_now">S’inscrire</string>
+    <string name="auth_login_as_guest">Continuer en tant qu’invité</string>
+    <string name="auth_language_switch_label">FR</string>
+    <string name="auth_demo_fill">Quick Demo Credentials</string>
+    <string name="auth_error_empty_user">Please enter your username or email</string>
+    <string name="auth_error_empty_password">Please enter your password</string>
+    <string name="auth_error_password_length">Password must be at least 6 characters</string>
+    <string name="auth_error_confirm_mismatch">Passwords do not match</string>
+    <string name="auth_biometric_prompt_title">Certified Biometric Authentication</string>
+    <string name="auth_biometric_prompt_desc">Touch fingerprint sensor or look at camera for quick secure verification</string>
+    <string name="auth_biometric_sim_success">Biometric verification succeeded</string>
+    <string name="auth_google_signing_in">Connecting &amp; verifying Google account...</string>
+    <string name="auth_reset_pwd_title">Password Recovery</string>
+    <string name="auth_reset_pwd_desc">Enter your registered email or ID to reset your access PIN</string>
+    <string name="auth_send_code">Send Recovery Link</string>
+    <string name="auth_reset_success">Recovery link sent successfully to your email</string>
+    <string name="auth_register_title">Create Executive Account</string>
+    <string name="auth_register_name">Full Name &amp; Title</string>
+    <string name="auth_register_email">Email Address or ID</string>
+    <string name="auth_register_password">Password</string>
+    <string name="auth_register_confirm_password">Confirm Password</string>
+    <string name="auth_register_btn">Create Account &amp; Proceed</string>
+    <string name="auth_guest_welcome">Welcome in Guest Mode! Exploration access granted</string>
+    <string name="auth_close">Close</string>
+
+    <!-- General Auth Strings -->
+    <string name="login_title">Connexion</string>
+    <string name="login_subtitle">Bon retour sur Smart Cost Pro</string>
+    <string name="email_label">Adresse e-mail</string>
+    <string name="password_label">Mot de passe</string>
+    <string name="forgot_password">Mot de passe oublié ?</string>
+    <string name="dont_have_account">Pas de compte ? Inscrivez-vous</string>
+    <string name="already_have_account">Déjà un compte ? Connectez-vous</string>
+    <string name="create_account_title">Créer un compte</string>
+    <string name="confirm_password_label">Confirmer le mot de passe</string>
+    <string name="full_name_label">Nom complet</string>
+    <string name="enter_local_workspace">Enter Local Workspace</string>
+    <string name="local_workspace_desc">100% secure, offline on-device storage</string>
+    <string name="auth_note_offline">The app functions 100% locally on this device with zero cloud dependency.</string>
+    
+    <!-- Dashboard -->
+    <string name="nav_dashboard">Accueil</string>
+    <string name="nav_expenses">Dépenses</string>
+    <string name="nav_vehicles">Véhicules</string>
+    <string name="nav_revenues">Revenus</string>
+    <string name="nav_reports">Rapports</string>
+    
+    <string name="dashboard_total_expenses">Total des dépenses</string>
+    <string name="dashboard_total_revenues">Total des revenus</string>
+    <string name="dashboard_net_balance">Solde net</string>
+    <string name="dashboard_monthly_summary">Résumé mensuel</string>
+    <string name="dashboard_recent_transactions">Opérations récentes</string>
+    <string name="dashboard_quick_actions">Actions rapides</string>
+    <string name="dashboard_add_expense">Ajouter une dépense</string>
+    <string name="dashboard_add_revenue">Ajouter un revenu</string>
+    <string name="dashboard_add_fuel_maintenance">Carburant / entretien</string>
+    <string name="dashboard_view_all">Tout voir</string>
+    <string name="dashboard_empty_recent">Aucune opération enregistrée ce mois-ci</string>
+    
+    <!-- Expense Categories / Departments -->
+    <string name="dept_personal">Personal Expenses</string>
+    <string name="dept_home">Home Expenses</string>
+    <string name="dept_education">Education Expenses</string>
+    <string name="dept_work">Work Expenses</string>
+    <string name="dept_vehicles">Vehicle Expenses</string>
+    <string name="dept_vehicle_revenues">Vehicle Revenues</string>
+    <string name="dept_fuel_maintenance">Fuel &amp; Maintenance</string>
+    <string name="dept_revenues_certificates">Revenues &amp; Certificates</string>
+    <string name="dept_reports">Financial Reports</string>
+    
+    <!-- Transactions & Actions -->
+    <string name="action_add">Ajouter</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_save">Enregistrer</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_confirm">Confirmer</string>
+    <string name="action_filter">Filtrer</string>
+    <string name="action_search">Rechercher...</string>
+    <string name="action_sort_date">Sort by Date</string>
+    <string name="action_sort_amount">Sort by Amount</string>
+    <string name="action_delete_confirm_title">Confirm Deletion</string>
+    <string name="action_delete_confirm_msg">Are you sure you want to permanently delete this record?</string>
+    
+    <!-- Form Labels -->
+    <string name="label_amount">Montant</string>
+    <string name="label_currency">EGP</string>
+    <string name="label_date">Date</string>
+    <string name="label_title">Titre / description</string>
+    <string name="label_category">Catégorie</string>
+    <string name="label_notes">Notes supplémentaires</string>
+    <string name="label_vehicle_select">Select Vehicle</string>
+    <string name="label_liters">Fuel Quantity (Liters)</string>
+    <string name="label_odometer">Odometer (km)</string>
+    <string name="label_service_type">Maintenance / Service Type</string>
+    <string name="label_service_center">Service Center / Workshop</string>
+    <string name="label_student_name">Student Name</string>
+    <string name="label_institution">School / University / Institute</string>
+    <string name="label_academic_term">Term / Grade</string>
+    <string name="label_work_project">Project / Client</string>
+    <string name="label_is_tax_deductible">Tax Deductible</string>
+    <string name="label_certificate_name">Certificate Name</string>
+    <string name="label_bank_name">Bank / Issuer</string>
+    <string name="label_interest_rate">Interest Rate (%)</string>
+    <string name="label_payout_cycle">Payout Cycle</string>
+    <string name="label_maturity_date">Maturity Date</string>
+    
+    <!-- Validation Errors -->
+    <string name="error_invalid_amount">Please enter a valid amount greater than zero</string>
+    <string name="error_required_field">Ce champ est obligatoire</string>
+    <string name="error_select_vehicle">Sélectionnez un véhicule</string>
+</resources>
