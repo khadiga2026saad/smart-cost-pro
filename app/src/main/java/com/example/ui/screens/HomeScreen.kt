@@ -309,7 +309,7 @@ fun HomeScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(46.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(GoldLight)
                             .border(1.dp, GoldPrimary.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
@@ -318,6 +318,7 @@ fun HomeScreen(
                         Icon(
                             Icons.Default.AttachMoney,
                             contentDescription = null,
+                            modifier = Modifier.size(24.dp),
                             tint = GoldDark
                         )
                     }
@@ -745,6 +746,7 @@ fun ExecutiveHeader(
         Spacer(Modifier.width(8.dp))
         Text(dateString, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = DeepSlate, maxLines = 1)
     }
+    }
 }
 
 /**
@@ -1043,7 +1045,7 @@ fun GatewayCard(
                 // Gold-tinted icon container
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(46.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
                             if (item.isPrimary) GoldLight else SurfaceCard
@@ -1059,7 +1061,7 @@ fun GatewayCard(
                         imageVector = item.icon,
                         contentDescription = item.title,
                         tint = if (item.isPrimary) GoldDark else DeepSlate,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
