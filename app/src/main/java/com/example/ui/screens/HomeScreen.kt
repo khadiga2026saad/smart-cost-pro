@@ -309,7 +309,7 @@ fun HomeScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(46.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(GoldLight)
                             .border(1.dp, GoldPrimary.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
@@ -318,6 +318,7 @@ fun HomeScreen(
                         Icon(
                             Icons.Default.AttachMoney,
                             contentDescription = null,
+                            modifier = Modifier.size(24.dp),
                             tint = GoldDark
                         )
                     }
@@ -549,13 +550,14 @@ fun ExecutiveHeader(
     var expandedMenu by remember { mutableStateOf(false) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
 
+    Column(modifier = modifier) {
     Card(
-        modifier = modifier
+        modifier = Modifier.fillMaxWidth()
             .testTag("executive_header_card"),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceCrispWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(1.dp, BorderLight)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = null
     ) {
         Row(
             modifier = Modifier
@@ -571,12 +573,12 @@ fun ExecutiveHeader(
                     .weight(1f, fill = false)
                     .testTag("header_user_profile")
             ) {
-                Box(modifier = Modifier.size(38.dp)) {
+                Box(modifier = Modifier.size(40.dp)) {
                     Image(
                         painter = painterResource(id = R.drawable.img_avatar_executive),
                         contentDescription = "صورة المدير التنفيذي",
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .border(1.5.dp, Color(0xFF00E5FF), CircleShape),
                         contentScale = ContentScale.Crop
@@ -619,12 +621,12 @@ fun ExecutiveHeader(
             // 2. أدوات التحكم على اليسار - أيقونات مصغرة وبخلفية شفافة تماماً بدون أي تلاصق
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 // جرس الإشعارات (مصغر وخلفية شفافة تماماً)
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .clickable(onClick = {})
                         .testTag("btn_header_notifications"),
@@ -634,7 +636,7 @@ fun ExecutiveHeader(
                         imageVector = Icons.Filled.Notifications,
                         contentDescription = "الإشعارات",
                         tint = DeepSlate,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(21.dp)
                     )
                     Box(
                         modifier = Modifier
@@ -644,7 +646,7 @@ fun ExecutiveHeader(
                     )
                 }
 
-                // الساعة الحية والتاريخ بتصميم ثنائي مدمج
+                // Keep the compact clock legible; the full date has its own row below.
                 val timeSegments = remember(timeString) {
                     val trimmed = timeString.trim()
                     val parts = trimmed.split(" ")
@@ -659,64 +661,20 @@ fun ExecutiveHeader(
                 val compactDate = remember(dateString) {
                     dateString.replace(Regex("\\s\\d{4}"), "")
                 }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .background(Color(0xFFF8FAFC), RoundedCornerShape(8.dp))
-                        .border(0.8.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    modifier = Modifier.testTag("header_clock")
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.Schedule,
-                            contentDescription = null,
-                            tint = Color(0xFF06B6D4),
-                            modifier = Modifier.size(9.dp)
-                        )
-                        Spacer(Modifier.width(2.dp))
-                        Text(
-                            text = hhMm,
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = DeepSlate,
-                                fontSize = 9.sp
-                            )
-                        )
-                        Text(
-                            text = ":$ss",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF06B6D4),
-                                fontSize = 8.sp
-                            )
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = period,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = SlateMedium,
-                                fontSize = 7.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Spacer(Modifier.width(2.dp))
-                        Text("📅", fontSize = 7.sp)
-                        Spacer(Modifier.width(1.dp))
-                        Text(
-                            text = compactDate,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = SlateMedium,
-                                fontSize = 7.sp
-                            )
-                        )
-                    }
+                    Icon(Icons.Filled.Schedule, contentDescription = null, tint = accentColor, modifier = Modifier.size(17.dp))
+                    Text("$"+"{hhMm}:$"+"ss", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = DeepSlate, maxLines = 1)
+                    Text(period, fontSize = 10.sp, color = SlateMedium, maxLines = 1)
                 }
 
                 // زر الإعدادات المباشر (مصغر وخلفية شفافة تماماً)
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .clickable(onClick = onSettingsClick)
                         .testTag("btn_header_settings"),
@@ -726,14 +684,14 @@ fun ExecutiveHeader(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "الإعدادات",
                         tint = DeepSlate,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(21.dp)
                     )
                 }
 
                 // قائمة الخيارات الإضافية (مصغرة وخلفية شفافة تماماً)
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .clickable { moreMenuExpanded = true }
                         .testTag("btn_header_more"),
@@ -743,7 +701,7 @@ fun ExecutiveHeader(
                         imageVector = Icons.Filled.MoreVert,
                         contentDescription = "المزيد",
                         tint = DeepSlate,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(21.dp)
                     )
                     DropdownMenu(
                         expanded = moreMenuExpanded,
@@ -773,6 +731,21 @@ fun ExecutiveHeader(
                 }
             }
         }
+    }
+    Spacer(Modifier.height(5.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .border(1.dp, BorderLight.copy(alpha = 0.65f), RoundedCornerShape(10.dp))
+            .testTag("header_date_strip")
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Filled.DateRange, contentDescription = null, tint = accentColor, modifier = Modifier.size(19.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(dateString, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = DeepSlate, maxLines = 1)
+    }
     }
 }
 
@@ -1072,7 +1045,7 @@ fun GatewayCard(
                 // Gold-tinted icon container
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(46.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
                             if (item.isPrimary) GoldLight else SurfaceCard
@@ -1088,7 +1061,7 @@ fun GatewayCard(
                         imageVector = item.icon,
                         contentDescription = item.title,
                         tint = if (item.isPrimary) GoldDark else DeepSlate,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
@@ -1669,7 +1642,7 @@ private fun CostStudyExportSection() {
                     Icon(
                         imageVector = Icons.Default.Description,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(21.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -1695,7 +1668,7 @@ private fun CostStudyExportSection() {
                     Icon(
                         imageVector = Icons.Default.ReceiptLong,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(21.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
