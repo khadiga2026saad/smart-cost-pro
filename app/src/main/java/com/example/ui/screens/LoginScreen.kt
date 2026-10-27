@@ -39,6 +39,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -59,10 +61,12 @@ fun LoginScreen(
     onForgotPasswordClick: () -> Unit = {},
     onGuestClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
-    onLanguageClick: () -> Unit = {},
+    selectedLanguage: String = "ar",
+    onSelectLanguage: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     loginViewModel: LoginViewModel = viewModel()
 ) {
+    var languageMenuExpanded by remember { mutableStateOf(false) }
     val username = loginViewModel.username
     val password = loginViewModel.password
     val showPassword = loginViewModel.showPassword
@@ -121,8 +125,23 @@ fun LoginScreen(
                 Spacer(Modifier.width(6.dp))
 
             }
-            Surface(onClick = { loginViewModel.onLanguageClick(); onLanguageClick() }, shape = CircleShape, color = GoldLight, border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .4f))) {
-                Text("◎ EN", Modifier.padding(horizontal = 9.dp, vertical = 4.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+            Box {
+                Surface(onClick = { languageMenuExpanded = true }, shape = CircleShape, color = GoldLight, border = BorderStroke(1.dp, GoldPrimary.copy(alpha = .4f))) {
+                    Text(
+                        when (selectedLanguage) { "en" -> "◎ English"; "fr" -> "◎ Français"; else -> "◎ العربية" },
+                        Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                        fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark
+                    )
+                }
+                DropdownMenu(expanded = languageMenuExpanded, onDismissRequest = { languageMenuExpanded = false }) {
+                    listOf("ar" to "العربية", "en" to "English", "fr" to "Français").forEach { (code, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label, fontWeight = if (selectedLanguage == code) FontWeight.Bold else FontWeight.Normal) },
+                            onClick = { languageMenuExpanded = false; onSelectLanguage(code) },
+                            trailingIcon = { if (selectedLanguage == code) Icon(Icons.Default.Check, contentDescription = null) }
+                        )
+                    }
+                }
             }
         }
         Image(
@@ -131,7 +150,7 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth().widthIn(max = 448.dp).height(230.dp),
             contentScale = ContentScale.Fit
         )
-        Text("منظومة الإدارة والتكاليف التنفيذية الذكية", fontSize = 11.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.auth_app_tagline), fontSize = 11.sp, color = TextSecondaryDark, textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))
         Surface(shape = CircleShape, color = SurfaceWhite, border = BorderStroke(1.dp, BorderLight), shadowElevation = 2.dp) {
             Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -152,16 +171,16 @@ fun LoginScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Person, null, Modifier.size(15.dp), tint = GoldDark)
                     Spacer(Modifier.width(6.dp))
-                    Text("اسم المستخدم أو البريد الإلكتروني", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SlateLight)
+                    Text(stringResource(R.string.auth_input_user_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
                 Spacer(Modifier.height(3.dp))
                 OutlinedTextField(
                     value = username, onValueChange = loginViewModel::onUsernameChange,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
-                    placeholder = { Text("مثال: CEO@smartcost.pro أو 29401", fontSize = 11.sp) },
+                    placeholder = { Text(stringResource(R.string.auth_input_user_placeholder), fontSize = 11.sp) },
                     leadingIcon = { Icon(Icons.Default.Person, null, Modifier.size(18.dp), tint = TextTertiaryDark) },
-                    textStyle = MaterialTheme.typography.bodySmall.copy(color = DeepSlate),
+                    textStyle = MaterialTheme.typography.bodySmall.copy(color = DeepSlate, textDirection = TextDirection.Ltr),
                     shape = fieldShape,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = GoldPrimary, unfocusedBorderColor = BorderLight,
@@ -172,7 +191,7 @@ fun LoginScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Lock, null, Modifier.size(15.dp), tint = GoldDark)
                     Spacer(Modifier.width(6.dp))
-                    Text("كلمة المرور المشفرة", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SlateLight)
+                    Text(stringResource(R.string.auth_input_password_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
                 Spacer(Modifier.height(6.dp))
                 OutlinedTextField(
@@ -203,9 +222,9 @@ fun LoginScreen(
                         Checkbox(checked = rememberDevice, onCheckedChange = loginViewModel::onRememberDeviceChange,
                             modifier = Modifier.size(32.dp),
                             colors = CheckboxDefaults.colors(checkedColor = GoldDark))
-                        Text("تذكر هذا الجهاز الآمن", fontSize = 11.sp, color = TextSecondaryDark)
+                        Text(stringResource(R.string.auth_remember_secure_device), fontSize = 11.sp, color = TextSecondaryDark)
                     }
-                    Text("استعادة كلمة المرور / الرمز", Modifier.clickable(onClick = { loginViewModel.onForgotPasswordClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+                    Text(stringResource(R.string.auth_forgot_password), Modifier.clickable(onClick = { loginViewModel.onForgotPasswordClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
                 }
                 Spacer(Modifier.height(12.dp))
                 Button(
@@ -224,7 +243,7 @@ fun LoginScreen(
                 Spacer(Modifier.height(24.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     HorizontalDivider(Modifier.weight(1f), color = BorderLight)
-                    Text("أو تسجيل الدخول السريع", Modifier.padding(horizontal = 10.dp), fontSize = 10.sp, color = TextTertiaryDark)
+                    Text(stringResource(R.string.auth_or_quick_login), Modifier.padding(horizontal = 10.dp), fontSize = 10.sp, color = TextTertiaryDark)
                     HorizontalDivider(Modifier.weight(1f), color = BorderLight)
                 }
                 Spacer(Modifier.height(16.dp))
@@ -239,8 +258,8 @@ fun LoginScreen(
                         }
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("الدخول السريع عبر Face ID / البصمة", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = DeepSlate)
-                            Text("التحقق البيومتري المعتمد", fontSize = 10.sp, color = TextSecondaryDark)
+                            Text(stringResource(R.string.auth_card_biometric_title), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = DeepSlate)
+                            Text(stringResource(R.string.auth_card_biometric_desc), fontSize = 10.sp, color = TextSecondaryDark)
                         }
                         Icon(Icons.Default.ArrowBack, null, Modifier.size(15.dp), tint = GoldDark)
                     }
@@ -257,15 +276,15 @@ fun LoginScreen(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("الدخول بحساب Google", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
+                    Text(stringResource(R.string.auth_btn_google), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SlateLight)
                 }
             }
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().widthIn(max = 448.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Text("ليس لديك حساب؟", fontSize = 11.sp, color = TextSecondaryDark)
+            Text(stringResource(R.string.auth_dont_have_account), fontSize = 11.sp, color = TextSecondaryDark)
             Spacer(Modifier.width(5.dp))
-            Text("سجل الآن", Modifier.clickable(onClick = { loginViewModel.onRegisterClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
+            Text(stringResource(R.string.auth_register_now), Modifier.clickable(onClick = { loginViewModel.onRegisterClick() }), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldDark)
         }
         Spacer(Modifier.height(10.dp))
         // Guest Login Tab with circular logo badge (كورة بها شعار البرنامج)
@@ -297,7 +316,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("الدخول كزائر", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = DeepSlate)
+                    Text(stringResource(R.string.auth_login_as_guest), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = DeepSlate)
                     Text("استعراض النظام دون الحاجة لحساب", fontSize = 10.sp, color = TextSecondaryDark)
                 }
                 Icon(Icons.Default.ArrowBack, null, Modifier.size(16.dp), tint = GoldDark)
@@ -309,14 +328,14 @@ fun LoginScreen(
     if (showRegisterDialog) {
         AlertDialog(
             onDismissRequest = { loginViewModel.dismissDialogs(); confirmPassword = "" },
-            title = { Text("إنشاء حساب جديد", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.create_account_title), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("سيتم إنشاء الحساب في Firebase باستخدام البريد الإلكتروني وكلمة المرور.")
                     OutlinedTextField(
                         value = username,
                         onValueChange = loginViewModel::onUsernameChange,
-                        label = { Text("البريد الإلكتروني") },
+                        label = { Text(stringResource(R.string.email_label)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         modifier = Modifier.fillMaxWidth()
@@ -333,7 +352,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        label = { Text("تأكيد كلمة المرور") },
+                        label = { Text(stringResource(R.string.confirm_password_label)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -348,7 +367,7 @@ fun LoginScreen(
                 ) { Text(if (isLoading) "جارٍ الإنشاء..." else "إنشاء الحساب") }
             },
             dismissButton = {
-                TextButton(onClick = { loginViewModel.dismissDialogs(); confirmPassword = "" }) { Text("إلغاء") }
+                TextButton(onClick = { loginViewModel.dismissDialogs(); confirmPassword = "" }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -363,7 +382,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = resetEmail,
                         onValueChange = { resetEmail = it },
-                        label = { Text("البريد الإلكتروني") },
+                        label = { Text(stringResource(R.string.email_label)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         modifier = Modifier.fillMaxWidth()
@@ -377,7 +396,7 @@ fun LoginScreen(
                 }) { Text(if (isLoading) "جارٍ الإرسال..." else "إرسال رابط الاستعادة") }
             },
             dismissButton = {
-                TextButton(onClick = { loginViewModel.dismissDialogs() }) { Text("إلغاء") }
+                TextButton(onClick = { loginViewModel.dismissDialogs() }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -401,7 +420,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = confirmGooglePassword,
                         onValueChange = { confirmGooglePassword = it },
-                        label = { Text("تأكيد كلمة المرور") },
+                        label = { Text(stringResource(R.string.confirm_password_label)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
