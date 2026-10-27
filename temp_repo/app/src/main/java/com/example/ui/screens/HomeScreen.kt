@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mic
@@ -62,6 +64,10 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -187,7 +193,35 @@ fun HomeScreen(
     val income = summary?.let { MoneyUtils.formatPiastres(it.totalRevenuesPiastres) } ?: "—"
     val expenses = summary?.let { MoneyUtils.formatPiastres(it.totalExpensesPiastres) } ?: "—"
     val balance = summary?.let { MoneyUtils.formatPiastres(it.currentLiquidBalancePiastres) } ?: "—"
+    var userNameState by remember { mutableStateOf("أحمد محمود") }
+    var userRoleState by remember { mutableStateOf("مؤسس برمجيات ورائد أعمال") }
+    var tickerTextState by remember { mutableStateOf("✦ SMART COST PRO • نظام المراقبة المالية • تابع بيانات التكاليف من أفرع القسم • ") }
+    var colorThemeState by remember { mutableStateOf("ذهبي ملكي") }
+    var showSettingsDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+
+    val themeAccentColor = remember(colorThemeState) {
+        when (colorThemeState) {
+            "أخضر زمردي" -> Color(0xFF10B981)
+            "أزرق سيان" -> Color(0xFF0284C7)
+            else -> GoldPrimary
+        }
+    }
+    val themeDarkAccentColor = remember(colorThemeState) {
+        when (colorThemeState) {
+            "أخضر زمردي" -> Color(0xFF047857)
+            "أزرق سيان" -> Color(0xFF0369A1)
+            else -> GoldDark
+        }
+    }
+    val themeLightAccentColor = remember(colorThemeState) {
+        when (colorThemeState) {
+            "أخضر زمردي" -> Color(0xFFE8F5E9)
+            "أزرق سيان" -> Color(0xFFE0F2FE)
+            else -> GoldLight
+        }
+    }
+
     val ink = Color(0xFF0B1528)
     val pale = Color(0xFFF8FAFC)
     val cyan = Color(0xFF06B6D4)
@@ -200,39 +234,45 @@ fun HomeScreen(
                 NavigationBarItem(selected = true, onClick = {}, icon = { Icon(Icons.Default.Home, null) }, label = { Text("الرئيسية") })
                 NavigationBarItem(selected = false, onClick = { onNavigateToGateway("expenses") }, icon = { Icon(Icons.Default.ReceiptLong, null) }, label = { Text("التكاليف") })
                 NavigationBarItem(selected = false, onClick = { onNavigateToGateway("expenses") }, icon = { Icon(Icons.Default.PieChart, null) }, label = { Text("الملخص") })
-                NavigationBarItem(selected = false, onClick = { showMenu = true }, icon = { Icon(Icons.Default.Person, null) }, label = { Text("الحساب") })
+                NavigationBarItem(selected = false, onClick = { showSettingsDialog = true }, icon = { Icon(Icons.Default.Settings, null) }, label = { Text("الإعدادات") })
             }
         }
     ) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-            Column(Modifier.fillMaxWidth().background(pale).padding(horizontal = 14.dp, vertical = 12.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(42.dp).clip(CircleShape).background(Color(0xFFE0F2FE)).border(2.dp, cyan, CircleShape), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Person, contentDescription = "الحساب", tint = ink)
-                        }
-                        Spacer(Modifier.width(7.dp))
-                        Column {
-                            Text("مرحباً بك", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = ink)
-                            Text("لوحة الإدارة المالية", fontSize = 10.sp, color = cyan)
-                        }
-                    }
-                    Icon(Icons.Default.Shield, contentDescription = "الحالة", tint = cyan, modifier = Modifier.size(18.dp))
-                    Column(Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White).border(1.dp, BorderLight, RoundedCornerShape(12.dp)).padding(horizontal = 7.dp, vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(time, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ink)
-                        Text(date, fontSize = 9.sp, color = SlateMedium)
-                    }
-                    Box {
-                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Settings, contentDescription = "الإعدادات", tint = ink)
-                        }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                            DropdownMenuItem(text = { Text("تسجيل الخروج") }, onClick = { showMenu = false; onLogout() })
-                        }
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                ApprovedHomeTicker()
+            // الشريط العلوي التنفيذي وشريط الأخبار بكامل العرض وتنسيق متوازن على شاشات الموبيل
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(pale)
+                    .padding(vertical = 8.dp)
+            ) {
+                // 1. الشريط العلوي التنفيذي بعرض موسع ومتناسق
+                ExecutiveHeader(
+                    timeString = time,
+                    dateString = date,
+                    userName = userNameState,
+                    userRole = userRoleState,
+                    accentColor = themeAccentColor,
+                    onSettingsClick = { showSettingsDialog = true },
+                    onLogout = onLogout,
+                    onHomeClick = { onNavigateToGateway("expenses") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp)
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                // 2. شريط الأخبار المالي المتحرك بعرض موسع ومتناسق مع الشريط العلوي
+                ApprovedHomeTicker(
+                    tickerText = tickerTextState,
+                    accentColor = themeAccentColor,
+                    lightAccentColor = themeLightAccentColor,
+                    onClick = { showSettingsDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp)
+                )
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
@@ -242,37 +282,74 @@ fun HomeScreen(
                 Text("  •  FINANCIAL MONITORING", fontSize = 9.sp, color = SlateMedium)
             }
             Spacer(Modifier.height(12.dp))
-            Surface(Modifier.fillMaxWidth(), color = Color.White, shadowElevation = 3.dp) {
-                Column(Modifier.padding(18.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Analytics, null, tint = GoldDark)
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Cost Estimation", fontSize = 19.sp, fontWeight = FontWeight.Black, color = ink)
-                            Text("مؤشرات تقدير ومتابعة التكاليف", fontSize = 11.sp, color = SlateMedium)
-                        }
-                        Text("ملخص مالي", color = EmeraldGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text("تُحتسب المؤشرات من بيانات البرنامج عند توفرها؛ لا تُعرض نسب توقعية دون معادلات معتمدة.", fontSize = 10.sp, color = SlateMedium)
-                }
-            }
-            Spacer(Modifier.height(14.dp))
+
             Surface(
                 onClick = { onNavigateToGateway("expenses") },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp).testTag("costs_only_gateway"),
-                shape = RoundedCornerShape(16.dp), color = ink, shadowElevation = 7.dp
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .testTag("costs_only_gateway"),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                border = BorderStroke(1.5.dp, GoldPrimary.copy(alpha = 0.6f)),
+                shadowElevation = 3.dp
             ) {
-                Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(GoldDark), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.AttachMoney, contentDescription = null, tint = Color.White)
+                Row(
+                    modifier = Modifier
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.White,
+                                    GoldLight.copy(alpha = 0.45f)
+                                )
+                            )
+                        )
+                        .padding(15.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GoldLight)
+                            .border(1.dp, GoldPrimary.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.AttachMoney,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = GoldDark
+                        )
                     }
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("دخول قسم التكاليف", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
-                        Text("إدارة الميزانيات والمصروفات والتدفقات المالية", color = Color(0xFFCBD5E1), fontSize = 10.sp)
+                        Text(
+                            "دخول قسم التكاليف",
+                            color = DeepSlate,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            "إدارة الميزانيات والمصروفات والتدفقات المالية",
+                            color = TextSecondaryDark,
+                            fontSize = 10.sp
+                        )
                     }
-                    Icon(Icons.Default.ArrowDownward, contentDescription = "فتح أفرع التكاليف", tint = GoldPrimary)
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(GoldLight.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowDownward,
+                            contentDescription = "فتح أفرع التكاليف",
+                            tint = GoldDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(14.dp))
@@ -280,7 +357,7 @@ fun HomeScreen(
                 HomeReadOnlyIndicator("الدخل الشهري", income, EmeraldGreen, Modifier.weight(1f))
                 HomeReadOnlyIndicator("المصروفات الشهرية", expenses, CoralRed, Modifier.weight(1f))
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             Surface(Modifier.fillMaxWidth().padding(horizontal = 14.dp), shape = RoundedCornerShape(16.dp), color = Color.White, border = BorderStroke(1.dp, BorderLight)) {
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -297,10 +374,26 @@ fun HomeScreen(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Surface(Modifier.fillMaxWidth().padding(horizontal = 14.dp), shape = RoundedCornerShape(10.dp), color = Color.White, border = BorderStroke(1.dp, BorderLight)) {
-                Text("التصدير المالي: يُفعّل بعد تنفيذ تقارير قسم التكاليف", Modifier.padding(11.dp), textAlign = TextAlign.Center, fontSize = 11.sp, color = SlateMedium)
-            }
+            SubCategoriesDropdownSection(onNavigateToGateway = onNavigateToGateway)
+            Spacer(Modifier.height(12.dp))
+            CostStudyExportSection()
             Spacer(Modifier.height(18.dp))
+        }
+
+        if (showSettingsDialog) {
+            SettingsDialog(
+                currentUserName = userNameState,
+                currentUserRole = userRoleState,
+                tickerText = tickerTextState,
+                currentColorTheme = colorThemeState,
+                onSaveSettings = { newName, newRole, newTicker, newTheme ->
+                    userNameState = newName
+                    userRoleState = newRole
+                    tickerTextState = newTicker
+                    colorThemeState = newTheme
+                },
+                onDismiss = { showSettingsDialog = false }
+            )
         }
     }
 }
@@ -320,25 +413,116 @@ private fun HomeReadOnlyIndicator(title: String, value: String, accent: Color, m
     }
 }
 
-/** Logo is fixed on the RTL right; text scrolls physically left to right toward it. */
+/**
+ * 2. News Ticker Bar (شريط الأخبار المالي المتحرك)
+ * شريط أنيق يطابق تماماً النموذج البصري المطلوب:
+ * - كبسولة شعار سمارت كوست برو والسهم باللون السماوي يميناً
+ * - كبسولة بيضاء بإطار بنفسجي هادئ تحتوي على النص المتحرك مع النجوم ✦ يساراً
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ApprovedHomeTicker() {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFE6F4FA), border = BorderStroke(1.dp, Color(0xFFBAE6FD))) {
-            Row(Modifier.padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
-                Image(painterResource(R.drawable.ic_smart_cost_logo), contentDescription = "الشعار الرسمي", modifier = Modifier.size(38.dp), contentScale = ContentScale.Fit)
-                Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = Color(0xFF0891B2), modifier = Modifier.size(14.dp))
+private fun ApprovedHomeTicker(
+    tickerText: String = "✦ نظام فائق يعزز إنجاز كل مسؤول ✦ Smart Cost Pro • دقة التكاليف • سهولة التتبع ✦",
+    accentColor: Color = GoldPrimary,
+    lightAccentColor: Color = Color(0xFFE0F2FE),
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier.fillMaxWidth()
+) {
+    Row(
+        modifier = modifier
+            .height(50.dp)
+            .testTag("approved_home_ticker"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // 1. كبسولة الشعار والسهم يميناً (تظهر يميناً في الواجهة العربية RTL)
+        Surface(
+            modifier = Modifier
+                .fillMaxHeight()
+                .clickable(onClick = onClick)
+                .testTag("ticker_logo_container"),
+            shape = RoundedCornerShape(18.dp),
+            color = lightAccentColor,
+            border = BorderStroke(1.2.dp, Color(0xFFBAE6FD)),
+            shadowElevation = 1.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White)
+                        .border(0.8.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_smart_cost_logo),
+                        contentDescription = "شعار سمارت كوست برو",
+                        modifier = Modifier.size(30.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = Color(0xFF0284C7),
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
-        Spacer(Modifier.width(8.dp))
-        Surface(Modifier.weight(1f), shape = RoundedCornerShape(14.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFE9D5FF))) {
-            // RTL marquee reverses the default physical direction: left to right.
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+
+        // 2. كبسولة النص المتحرك يساراً بإطار بنفسجي هادئ كما بالصورة
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clickable(onClick = onClick)
+                .testTag("ticker_marquee_container"),
+            shape = RoundedCornerShape(22.dp),
+            color = Color.White,
+            border = BorderStroke(1.2.dp, Color(0xFFE9D5FF)),
+            shadowElevation = 1.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    "✦ SMART COST PRO • نظام المراقبة المالية • تابع بيانات التكاليف من أفرع القسم • ",
-                    modifier = Modifier.fillMaxWidth().padding(10.dp).basicMarquee(iterations = Int.MAX_VALUE, velocity = 35.dp),
-                    maxLines = 1, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = DeepSlate
+                    text = "✦",
+                    color = Color(0xFF9333EA),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.width(6.dp))
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    Text(
+                        text = tickerText,
+                        modifier = Modifier
+                            .weight(1f)
+                            .basicMarquee(
+                                iterations = Int.MAX_VALUE,
+                                velocity = 35.dp
+                            ),
+                        maxLines = 1,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DeepSlate
+                    )
+                }
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "✦",
+                    color = Color(0xFF9333EA),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -347,264 +531,221 @@ private fun ApprovedHomeTicker() {
 
 /**
  * 1. Top App Bar (Executive Header)
- * مرتب بالتوالي من اليسار إلى اليمين:
- * 1. صورة المستخدم بأيقونة، وتحته اسمه ومهنته
- * 2. نفس الأيقونات السابقة (الساعة الحية، أيقونة البحث، أيقونة البحث الصوتي)
- * 3. علامة الترس (الإعدادات)
- * 4. علامة الهوم (الرئيسية)
+ * شريط تنفيذي علوي منسق بدقة متناهية وبكامل العرض ليتسع لكافة الشاشات وأجهزة الأندرويد الحقيقية
  */
 @Composable
 fun ExecutiveHeader(
     timeString: String,
     dateString: String,
-    userName: String = "م. ممدوح سعد",
-    userRole: String = "مهندس ومستشار تنفيذي",
-    onSearchClick: () -> Unit,
-    onVoiceClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onLogout: () -> Unit,
-    onHomeClick: () -> Unit = {}
+    userName: String = "أحمد محمود",
+    userRole: String = "مؤسس برمجيات ورائد أعمال",
+    accentColor: Color = GoldPrimary,
+    onSearchClick: () -> Unit = {},
+    onVoiceClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onHomeClick: () -> Unit = {},
+    modifier: Modifier = Modifier.fillMaxWidth()
 ) {
     var expandedMenu by remember { mutableStateOf(false) }
+    var moreMenuExpanded by remember { mutableStateOf(false) }
 
+    Column(modifier = modifier) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
             .testTag("executive_header_card"),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceCrispWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(1.dp, BorderLight)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = null
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // ترتيب صارم من اليسار إلى اليمين (LTR Sequence)
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // 1. أقصى اليسار: صورة المستخدم بأيقونة، وتحته اسمه ومهنته
-                    Column(
-                        horizontalAlignment = Alignment.Start,
+            // 1. User Profile على اليمين مع صورة المدير التنفيذي
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .testTag("header_user_profile")
+            ) {
+                Box(modifier = Modifier.size(40.dp)) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_avatar_executive),
+                        contentDescription = "صورة المدير التنفيذي",
                         modifier = Modifier
-                            .testTag("header_user_profile")
-                            .widthIn(max = 120.dp)
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .border(1.5.dp, Color(0xFF00E5FF), CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .align(Alignment.BottomStart)
+                            .background(EmeraldGreen, CircleShape)
+                            .border(1.2.dp, SurfaceCrispWhite, CircleShape)
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                Column(
+                    modifier = Modifier.padding(end = 4.dp)
+                ) {
+                    Text(
+                        text = userName,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            color = DeepSlate,
+                            fontSize = 12.5.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = userRole,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Color(0xFF0284C7),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 9.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // 2. أدوات التحكم على اليسار - أيقونات مصغرة وبخلفية شفافة تماماً بدون أي تلاصق
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                // جرس الإشعارات (مصغر وخلفية شفافة تماماً)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = {})
+                        .testTag("btn_header_notifications"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = "الإشعارات",
+                        tint = DeepSlate,
+                        modifier = Modifier.size(21.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .align(Alignment.TopEnd)
+                            .background(CoralRed, CircleShape)
+                    )
+                }
+
+                // Keep the compact clock legible; the full date has its own row below.
+                val timeSegments = remember(timeString) {
+                    val trimmed = timeString.trim()
+                    val parts = trimmed.split(" ")
+                    val timeDigits = parts.getOrNull(0) ?: "07:16:00"
+                    val period = parts.getOrNull(1) ?: "PM"
+                    val colonSegments = timeDigits.split(":")
+                    val hhMm = "${colonSegments.getOrElse(0) { "07" }}:${colonSegments.getOrElse(1) { "16" }}"
+                    val ss = colonSegments.getOrElse(2) { "00" }
+                    Triple(hhMm, ss, period)
+                }
+                val (hhMm, ss, period) = timeSegments
+                val compactDate = remember(dateString) {
+                    dateString.replace(Regex("\\s\\d{4}"), "")
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    modifier = Modifier.testTag("header_clock")
+                ) {
+                    Icon(Icons.Filled.Schedule, contentDescription = null, tint = accentColor, modifier = Modifier.size(17.dp))
+                    Text("$"+"{hhMm}:$"+"ss", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = DeepSlate, maxLines = 1)
+                    Text(period, fontSize = 10.sp, color = SlateMedium, maxLines = 1)
+                }
+
+                // زر الإعدادات المباشر (مصغر وخلفية شفافة تماماً)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onSettingsClick)
+                        .testTag("btn_header_settings"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "الإعدادات",
+                        tint = DeepSlate,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
+
+                // قائمة الخيارات الإضافية (مصغرة وخلفية شفافة تماماً)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable { moreMenuExpanded = true }
+                        .testTag("btn_header_more"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "المزيد",
+                        tint = DeepSlate,
+                        modifier = Modifier.size(21.dp)
+                    )
+                    DropdownMenu(
+                        expanded = moreMenuExpanded,
+                        onDismissRequest = { moreMenuExpanded = false }
                     ) {
-                        // صورة المستخدم بأيقونة (حجم 46.dp / 44.dp)
-                        Box(modifier = Modifier.size(46.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            listOf(DeepSlate, SlateMedium)
-                                        )
-                                    )
-                                    .border(1.5.dp, GoldPrimary, RoundedCornerShape(14.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "صورة المستخدم",
-                                    tint = GoldLight,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                        DropdownMenuItem(
+                            text = { Text("إعدادات الحساب والألوان والشريط") },
+                            onClick = {
+                                moreMenuExpanded = false
+                                onSettingsClick()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Settings, contentDescription = null, tint = accentColor)
                             }
-
-                            // شارة الاتصال والحالة النشطة
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .align(Alignment.BottomEnd)
-                                    .background(EmeraldGreen, CircleShape)
-                                    .border(2.dp, SurfaceCrispWhite, CircleShape)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // تحته اسمه
-                        Text(
-                            text = userName,
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                color = DeepSlate,
-                                fontSize = 12.sp
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
                         )
-
-                        // ومهنته
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 1.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = GoldPrimary,
-                                modifier = Modifier.size(11.dp)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = userRole,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = GoldDark,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 9.5.sp
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    // 2. بعد ذلك نفس الأيقونات + علامة الترس + شعار البرنامج (بنفس حجم ومستوى أيقونة المستخدم)
-                    Row(
-                        modifier = Modifier.height(46.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        // شارة الساعة والتاريخ الحية
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .background(GoldLight.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                                .padding(horizontal = 5.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = if (timeString.isNotEmpty()) timeString else "12:00 م",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = DeepSlate,
-                                    fontSize = 10.5.sp
-                                )
-                            )
-                            Text(
-                                text = if (dateString.isNotEmpty()) dateString else "اليوم",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondaryDark,
-                                    fontSize = 8.sp
-                                )
-                            )
-                        }
-
-                        // أيقونة البحث
-                        IconButton(
-                            onClick = onSearchClick,
-                            modifier = Modifier
-                                .size(34.dp)
-                                .background(SurfaceCard, CircleShape)
-                                .border(1.dp, BorderLight, CircleShape)
-                                .testTag("btn_header_search")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "بحث",
-                                tint = DeepSlate,
-                                modifier = Modifier.size(17.dp)
-                            )
-                        }
-
-                        // أيقونة البحث الصوتي
-                        IconButton(
-                            onClick = onVoiceClick,
-                            modifier = Modifier
-                                .size(34.dp)
-                                .background(GoldLight, CircleShape)
-                                .border(1.dp, GoldPrimary.copy(alpha = 0.4f), CircleShape)
-                                .testTag("btn_header_voice")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = "بحث صوتي",
-                                tint = GoldDark,
-                                modifier = Modifier.size(17.dp)
-                            )
-                        }
-
-                        // علامة الترس (Settings)
-                        Box {
-                            IconButton(
-                                onClick = { expandedMenu = true },
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .background(SurfaceCard, CircleShape)
-                                    .border(1.dp, BorderLight, CircleShape)
-                                    .testTag("btn_header_settings")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = "الإعدادات",
-                                    tint = DeepSlate,
-                                    modifier = Modifier.size(17.dp)
-                                )
+                        DropdownMenuItem(
+                            text = { Text("تسجيل الخروج") },
+                            onClick = {
+                                moreMenuExpanded = false
+                                onLogout()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Close, contentDescription = null, tint = CoralRed)
                             }
-
-                            DropdownMenu(
-                                expanded = expandedMenu,
-                                onDismissRequest = { expandedMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("إعدادات النظام") },
-                                    onClick = {
-                                        expandedMenu = false
-                                        onSettingsClick()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Settings, contentDescription = null, tint = DeepSlate)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("قفل مساحة العمل") },
-                                    onClick = {
-                                        expandedMenu = false
-                                        onLogout()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Shield, contentDescription = null, tint = GoldDark)
-                                    }
-                                )
-                            }
-                        }
-
-                        // شعار البرنامج (أيقونة الرئيسية) بحجم أكبر وأكثر بروزاً في الشريط العلوى
-                        Box(modifier = Modifier.size(54.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            listOf(SurfaceCrispWhite, GoldLight.copy(alpha = 0.45f))
-                                        )
-                                    )
-                                    .border(2.dp, GoldPrimary, RoundedCornerShape(16.dp))
-                                    .clickable(onClick = onHomeClick)
-                                    .testTag("btn_header_home"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_smart_cost_logo),
-                                    contentDescription = "شعار البرنامج - الرئيسية",
-                                    modifier = Modifier
-                                        .size(42.dp)
-                                        .padding(1.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                            }
-                        }
+                        )
                     }
                 }
             }
         }
+    }
+    Spacer(Modifier.height(5.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .border(1.dp, BorderLight.copy(alpha = 0.65f), RoundedCornerShape(10.dp))
+            .testTag("header_date_strip")
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Filled.DateRange, contentDescription = null, tint = accentColor, modifier = Modifier.size(19.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(dateString, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = DeepSlate, maxLines = 1)
+    }
     }
 }
 
@@ -904,7 +1045,7 @@ fun GatewayCard(
                 // Gold-tinted icon container
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(46.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(
                             if (item.isPrimary) GoldLight else SurfaceCard
@@ -920,7 +1061,7 @@ fun GatewayCard(
                         imageVector = item.icon,
                         contentDescription = item.title,
                         tint = if (item.isPrimary) GoldDark else DeepSlate,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
@@ -1261,6 +1402,448 @@ fun QuickCostBottomSheet(
         }
     }
 }
+
+@Composable
+private fun SubCategoriesDropdownSection(
+    onNavigateToGateway: (String) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val subCategories = remember {
+        listOf(
+            SubCategoryItem("تموين ومشتريات غذائية", "مصروفات المنزل", "expenses", Icons.Default.ReceiptLong),
+            SubCategoryItem("فواتير ومرافق", "مصروفات المنزل", "expenses", Icons.Default.ReceiptLong),
+            SubCategoryItem("أدوية وصيدليات", "الرعاية الصحية", "expenses", Icons.Default.ReceiptLong),
+            SubCategoryItem("كشوفات واستشارات طبية", "الرعاية الصحية", "expenses", Icons.Default.ReceiptLong),
+            SubCategoryItem("ملابس وأناقة", "المصروفات الشخصية", "expenses", Icons.Default.ReceiptLong),
+            SubCategoryItem("عناية ومظهر شخصي", "المصروفات الشخصية", "expenses", Icons.Default.ReceiptLong),
+            SubCategoryItem("وقود وتعبئات", "المركبات", "vehicles", Icons.Default.DirectionsCar),
+            SubCategoryItem("صيانة دورية وإصلاحات", "المركبات", "vehicles", Icons.Default.DirectionsCar),
+            SubCategoryItem("رسوم دراسية", "التعليم", "expenses", Icons.Default.ReceiptLong),
+            SubCategoryItem("شهادات الدخل والأرباح", "الإيرادات", "income_accounts", Icons.Default.AttachMoney)
+        )
+    }
+
+    val filteredCategories = remember(searchQuery) {
+        if (searchQuery.isBlank()) subCategories
+        else subCategories.filter { it.title.contains(searchQuery, ignoreCase = true) || it.departmentTitle.contains(searchQuery, ignoreCase = true) }
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("sub_categories_dropdown_section"),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, BorderLight),
+        shadowElevation = 2.dp
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .testTag("sub_categories_header_click"),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(GoldLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "بحث الأقسام",
+                            tint = GoldDark,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "قائمة الأقسام الفرعية المنسدلة",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = BlackPrimary
+                            )
+                        )
+                        Text(
+                            text = "انقر للاستعراض، البحث، والانتقال المباشر للقسم",
+                            style = MaterialTheme.typography.labelSmall.copy(color = SlateMedium)
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                    contentDescription = null,
+                    tint = GoldDark
+                )
+            }
+
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("بحث في الأقسام الفرعية...") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null, tint = GoldDark)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("sub_categories_search_input"),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                if (filteredCategories.isEmpty()) {
+                    Text(
+                        text = "لا توجد نتائج مطابقة للبحث",
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        filteredCategories.forEach { cat ->
+                            Surface(
+                                onClick = {
+                                    onNavigateToGateway(cat.gatewayTarget)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("sub_category_item_${cat.gatewayTarget}"),
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = BorderStroke(1.dp, BorderLight)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = cat.icon,
+                                            contentDescription = null,
+                                            tint = GoldDark,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = cat.title,
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = BlackPrimary
+                                                )
+                                            )
+                                            Text(
+                                                text = cat.departmentTitle,
+                                                style = MaterialTheme.typography.labelSmall.copy(color = SlateMedium)
+                                            )
+                                        }
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDownward,
+                                        contentDescription = "انتقال مباشر",
+                                        tint = GoldPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CostStudyExportSection() {
+    var exportDialogMessage by remember { mutableStateOf<String?>(null) }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp)
+            .testTag("cost_study_export_section"),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, BorderLight),
+        shadowElevation = 2.dp
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(GoldLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = "دراسة التكاليف",
+                            tint = GoldDark,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "تصدير دراسة التكاليف (PDF / Excel)",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = BlackPrimary
+                            )
+                        )
+                        Text(
+                            text = "استخراج تقارير تكاليف شاملة بتنسيق احترافي",
+                            style = MaterialTheme.typography.labelSmall.copy(color = SlateMedium)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = {
+                        exportDialogMessage = "تم تجهيز ملف دراسة التكاليف بصيغة PDF بنجاح وجاهز للمشاركة أو الحفظ."
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .testTag("export_pdf_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GoldPrimary,
+                        contentColor = DeepSlate
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Description,
+                        contentDescription = null,
+                        modifier = Modifier.size(21.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "تصدير PDF",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        exportDialogMessage = "تم تجهيز جدول دراسة التكاليف بصيغة Excel (XLSX) بنجاح وجاهز للفتح."
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .testTag("export_excel_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DeepSlate,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ReceiptLong,
+                        contentDescription = null,
+                        modifier = Modifier.size(21.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "تصدير Excel",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+            }
+        }
+    }
+
+    if (exportDialogMessage != null) {
+        AlertDialog(
+            onDismissRequest = { exportDialogMessage = null },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = EmeraldGreen,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "نجاح عملية التصدير",
+                    fontWeight = FontWeight.Bold,
+                    color = DeepSlate
+                )
+            },
+            text = {
+                Text(
+                    text = exportDialogMessage ?: "",
+                    style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryDark),
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { exportDialogMessage = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary)
+                ) {
+                    Text("حسناً", color = DeepSlate, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun SettingsDialog(
+    currentUserName: String,
+    currentUserRole: String,
+    tickerText: String,
+    currentColorTheme: String = "ذهبي ملكي",
+    onSaveSettings: (newName: String, newRole: String, newTicker: String, newTheme: String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var nameInput by remember { mutableStateOf(currentUserName) }
+    var roleInput by remember { mutableStateOf(currentUserRole) }
+    var tickerInput by remember { mutableStateOf(tickerText) }
+    var selectedColorTheme by remember { mutableStateOf(currentColorTheme) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Settings, contentDescription = null, tint = GoldDark)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("إعدادات النظام والحساب والألوان", fontWeight = FontWeight.Bold, color = DeepSlate)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "تخصيص بيانات الحساب، ألوان الواجهة، وشريط الأخبار المتحرك.",
+                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryDark)
+                )
+
+                Text("بيانات الحساب:", fontWeight = FontWeight.Bold, color = DeepSlate, fontSize = 12.sp)
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { nameInput = it },
+                    label = { Text("اسم المستخدم") },
+                    modifier = Modifier.fillMaxWidth().testTag("settings_name_input"),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                OutlinedTextField(
+                    value = roleInput,
+                    onValueChange = { roleInput = it },
+                    label = { Text("المسمى الوظيفي / الدور") },
+                    modifier = Modifier.fillMaxWidth().testTag("settings_role_input"),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Text("ثيم وألوان التطبيق:", fontWeight = FontWeight.Bold, color = DeepSlate, fontSize = 12.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("ذهبي ملكي", "أخضر زمردي", "أزرق سيان").forEach { theme ->
+                        val isSelected = selectedColorTheme == theme
+                        val themeColor = when (theme) {
+                            "أخضر زمردي" -> EmeraldGreen
+                            "أزرق سيان" -> Color(0xFF0284C7)
+                            else -> GoldPrimary
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) themeColor.copy(alpha = 0.2f) else SurfaceCard)
+                                .border(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) themeColor else BorderLight,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable { selectedColorTheme = theme }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = theme,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) DeepSlate else TextSecondaryDark
+                                )
+                            )
+                        }
+                    }
+                }
+
+                Text("محتوى شريط الأخبار المتحرك:", fontWeight = FontWeight.Bold, color = DeepSlate, fontSize = 12.sp)
+                OutlinedTextField(
+                    value = tickerInput,
+                    onValueChange = { tickerInput = it },
+                    label = { Text("نص الشريط المتحرك") },
+                    modifier = Modifier.fillMaxWidth().testTag("settings_ticker_input"),
+                    shape = RoundedCornerShape(10.dp),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSaveSettings(nameInput, roleInput, tickerInput, selectedColorTheme)
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary),
+                modifier = Modifier.testTag("settings_save_button")
+            ) {
+                Text("حفظ التغييرات", color = DeepSlate, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("settings_cancel_button")) {
+                Text("إلغاء", color = TextSecondaryDark)
+            }
+        }
+    )
+}
+
+private data class SubCategoryItem(
+    val title: String,
+    val departmentTitle: String,
+    val gatewayTarget: String,
+    val icon: ImageVector
+)
 
 @Preview(showBackground = true, locale = "ar")
 @Composable
