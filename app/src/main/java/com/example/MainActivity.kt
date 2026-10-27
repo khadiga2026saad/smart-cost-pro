@@ -1,6 +1,8 @@
 package com.example
 
 import android.content.res.Configuration
+import android.content.Context
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
@@ -88,31 +90,36 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            var isEnglish by remember { mutableStateOf(false) }
-
-            val currentContext = LocalContext.current
-            val currentConfig = LocalConfiguration.current
-
-            val localizedContext = remember(isEnglish) {
-                val locale = if (isEnglish) Locale("en") else Locale("ar")
-                val config = Configuration(currentConfig).apply {
-                    setLocale(locale)
-                    setLayoutDirection(locale)
-                }
-                currentContext.createConfigurationContext(config)
+            val baseContext = LocalContext.current
+            val preferences = remember(baseContext) {
+                baseContext.getSharedPreferences("smart_cost_language", Context.MODE_PRIVATE)
             }
-
-            val layoutDirection = if (isEnglish) LayoutDirection.Ltr else LayoutDirection.Rtl
+            var selectedLanguage by rememberSaveable {
+                mutableStateOf(preferences.getString("language", "ar")?.takeIf { it in listOf("ar", "en", "fr") } ?: "ar")
+            }
+            val currentConfig = LocalConfiguration.current
+            val localizedContext = remember(baseContext, currentConfig, selectedLanguage) {
+                val config = Configuration(currentConfig).apply {
+                    setLocale(Locale(selectedLanguage))
+                    setLayoutDirection(Locale("ar"))
+                }
+                baseContext.createConfigurationContext(config)
+            }
 
             SmartCostProTheme {
                 CompositionLocalProvider(
                     LocalContext provides localizedContext,
-                    LocalLayoutDirection provides layoutDirection
+                    LocalLayoutDirection provides LayoutDirection.Rtl
                 ) {
                     SmartCostProApp(
                         viewModel = financeViewModel,
-                        isEnglish = isEnglish,
-                        onToggleLanguage = { isEnglish = !isEnglish }
+                        selectedLanguage = selectedLanguage,
+                        onSelectLanguage = { language ->
+                            if (language in listOf("ar", "en", "fr")) {
+                                selectedLanguage = language
+                                preferences.edit().putString("language", language).apply()
+                            }
+                        }
                     )
                 }
             }
@@ -124,8 +131,8 @@ class MainActivity : FragmentActivity() {
 @Composable
 fun SmartCostProApp(
     viewModel: FinanceViewModel,
-    isEnglish: Boolean = false,
-    onToggleLanguage: () -> Unit = {},
+    selectedLanguage: String = "ar",
+    onSelectLanguage: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Keep the Firebase session, but require biometric verification on a fresh app launch
@@ -175,7 +182,8 @@ fun SmartCostProApp(
                 currentScreen = Screen.DASHBOARD
                 showingCostCategories = false
             },
-            onLanguageClick = onToggleLanguage,
+            selectedLanguage = selectedLanguage,
+            onSelectLanguage = onSelectLanguage,
             modifier = modifier
         )
     } else {
