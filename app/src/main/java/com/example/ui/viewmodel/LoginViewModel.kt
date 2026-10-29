@@ -289,7 +289,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun onLoginClick(activity: FragmentActivity, onSuccess: () -> Unit) {
+    fun onLoginClick(activity: FragmentActivity?, onSuccess: () -> Unit) {
         val email = username.trim()
         if (email.isBlank() || password.isBlank()) {
             errorMessage = "من فضلك أدخل البريد الإلكتروني وكلمة المرور"
@@ -324,7 +324,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
-    fun registerAccount(confirmPassword: String, activity: FragmentActivity, onSuccess: () -> Unit) {
+    fun registerAccount(confirmPassword: String, activity: FragmentActivity?, onSuccess: () -> Unit) {
         val email = username.trim()
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) { errorMessage = "أدخل بريدًا إلكترونيًا صحيحًا"; return }
         if (password.length < 6) { errorMessage = "كلمة المرور يجب ألا تقل عن 6 أحرف"; return }

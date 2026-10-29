@@ -229,7 +229,7 @@ fun LoginScreen(
                 }
                 Spacer(Modifier.height(12.dp))
                 Button(
-                    onClick = { activity?.let { loginViewModel.onLoginClick(it, onLoginClick) } ?: run { android.widget.Toast.makeText(context, "تعذر فتح نافذة المصادقة", android.widget.Toast.LENGTH_SHORT).show() } }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(52.dp),
+                    onClick = { loginViewModel.onLoginClick(activity, onLoginClick) }, enabled = !isLoading, modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = fieldShape, colors = ButtonDefaults.buttonColors(containerColor = DeepSlate),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
@@ -368,7 +368,7 @@ fun LoginScreen(
             confirmButton = {
                 TextButton(enabled = !isLoading, onClick = {
                     if (loginViewModel.awaitingEmailVerification) loginViewModel.checkEmailVerification(onLoginClick)
-                    else activity?.let { loginViewModel.registerAccount(confirmPassword, it, onLoginClick) }
+                    else loginViewModel.registerAccount(confirmPassword, activity, onLoginClick)
                 }) { Text(if (isLoading) "جارٍ التحقق..." else if (loginViewModel.awaitingEmailVerification) "تحقق من التفعيل" else "إنشاء الحساب") }
             },
             dismissButton = { TextButton(onClick = { loginViewModel.dismissDialogs(); confirmPassword = "" }) { Text(stringResource(R.string.action_cancel)) } }
