@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.fragment.app.FragmentActivity
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
@@ -252,7 +253,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun onLoginClick(onSuccess: () -> Unit) {
+    fun onLoginClick(activity: FragmentActivity?, onSuccess: () -> Unit) {
         val email = username.trim()
         if (email.isBlank() || password.isBlank()) {
             errorMessage = "من فضلك أدخل البريد الإلكتروني وكلمة المرور"
