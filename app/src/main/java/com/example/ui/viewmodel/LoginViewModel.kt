@@ -3,13 +3,10 @@ package com.example.ui.viewmodel
 import android.app.Application
 import android.content.Context
 import android.content.ContextWrapper
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
-import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.fragment.app.FragmentActivity
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
@@ -53,7 +50,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     var showGooglePasswordDialog by mutableStateOf(false)
         private set
     private var pendingGoogleSuccess: (() -> Unit)? = null
-    private var pendingGoogleActivity: FragmentActivity? = null
 
     fun onUsernameChange(value: String) {
         username = value.trim()
@@ -78,10 +74,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     fun dismissDialogs() { showRegisterDialog = false; showForgotPasswordDialog = false; showGooglePasswordDialog = false }
 
     fun onBiometricClick(activity: FragmentActivity, onSuccess: () -> Unit) {
-        if (auth.currentUser == null) {
-            notice = "سجّل الدخول بحسابك أولًا، ثم فعّل الدخول بالبصمة على هذا الجهاز"
+        val biometricUser = auth.currentUser
+        if (biometricUser == null || biometricUser.isAnonymous || !biometricUser.isEmailVerified ||
+            !preferences.getBoolean("biometric_enabled", false) ||
+            preferences.getString("biometric_uid", null) != biometricUser.uid) {
+            notice = "سجّل الدخول بحساب مفعّل وفعّل البصمة لهذا الحساب أولًا"
             return
         }
+        val expectedUid = biometricUser.uid
         val manager = BiometricManager.from(activity)
         val availability = manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
         if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
@@ -102,7 +102,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    onSuccess()
+                    if (auth.currentUser?.uid == expectedUid &&
+                        preferences.getString("biometric_uid", null) == expectedUid &&
+                        auth.currentUser?.isEmailVerified == true &&
+                        auth.currentUser?.isAnonymous == false) {
+                        onSuccess()
+                    } else {
+                        notice = "تغيّر الحساب أو انتهت صلاحيته؛ سجّل الدخول مجددًا"
+                    }
                 }
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
@@ -118,46 +125,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 .setTitle("الدخول الآمن إلى SMART COST PRO")
                 .setSubtitle("تحقق بالبصمة أو وسيلة المصادقة الحيوية المسجلة")
                 .setNegativeButtonText("إلغاء")
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
-                .build()
-        )
-    }
-
-    private fun offerBiometricSetup(activity: FragmentActivity?, onComplete: () -> Unit) {
-        if (activity == null) {
-            onComplete()
-            return
-        }
-        val availability = BiometricManager.from(activity)
-            .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
-        if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
-            if (availability == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
-                notice = "يمكنك إضافة بصمة من إعدادات أمان الهاتف ثم تفعيلها عند تسجيل الدخول مرة أخرى"
-            }
-            onComplete()
-            return
-        }
-        val prompt = BiometricPrompt(
-            activity,
-            ContextCompat.getMainExecutor(activity),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    preferences.edit().putBoolean("biometric_enabled", true).apply()
-                    notice = "تم تفعيل الدخول السريع بالبصمة على هذا الجهاز"
-                    onComplete()
-                }
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    onComplete()
-                }
-            }
-        )
-        prompt.authenticate(
-            BiometricPrompt.PromptInfo.Builder()
-                .setTitle("تفعيل الدخول السريع بالبصمة؟")
-                .setSubtitle("يمكنك استخدام البصمة لفتح جلستك المحفوظة عند العودة للتطبيق")
-                .setNegativeButtonText("ليس الآن")
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
                 .build()
         )
@@ -188,11 +155,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                             saveRememberedUser(user.email.orEmpty())
                             val hasPasswordProvider = user.providerData.any { it.providerId == EmailAuthProvider.PROVIDER_ID }
                             if (hasPasswordProvider) {
-                                offerBiometricSetup(findFragmentActivity(context), onSuccess)
+                                onSuccess()
                             } else {
                                 // Keep the same Google-backed Firebase account and add email/password as a linked provider.
                                 pendingGoogleSuccess = onSuccess
-                                pendingGoogleActivity = findFragmentActivity(context)
                                 showGooglePasswordDialog = true
                                 notice = "يمكنك تعيين كلمة مرور للدخول بالبريد الإلكتروني أيضًا"
                             }
@@ -240,10 +206,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 password = ""
                 notice = "تم ربط البريد الإلكتروني وكلمة المرور بنفس حساب Google"
                 val callback = pendingGoogleSuccess
-                val activity = pendingGoogleActivity
                 pendingGoogleSuccess = null
-                pendingGoogleActivity = null
-                if (callback != null) offerBiometricSetup(activity, callback)
+                callback?.invoke()
             } else {
                 val raw = task.exception?.message.orEmpty().lowercase()
                 errorMessage = when {
@@ -295,7 +259,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             errorMessage = "من فضلك أدخل البريد الإلكتروني وكلمة المرور"
             return
         }
-        if (!email.contains("@")) {
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             errorMessage = "أدخل بريدًا إلكترونيًا صحيحًا"
             return
         }
@@ -316,7 +280,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         awaitingEmailVerification = false
                         saveRememberedUser(email)
                         password = ""
-                        offerBiometricSetup(activity, onSuccess)
+                        onSuccess()
                     }
                 } else {
                     errorMessage = authError(task.exception?.message, isRegistration = false)
@@ -353,8 +317,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun sendPasswordReset() {
         val email = username.trim()
-        if (email.isBlank() || !email.contains("@")) {
-            errorMessage = "أدخل بريدك الإلكتروني المسجل أولًا"
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            errorMessage = "أدخل بريدًا إلكترونيًا صحيحًا لاستعادة كلمة المرور"
             return
         }
         if (isLoading) return
@@ -373,7 +337,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onGuestClick(onEnter: () -> Unit) {
         // Do not let guest mode bypass the biometric lock on an authenticated session.
-        if (auth.currentUser != null && preferences.getBoolean("biometric_enabled", false)) {
+        val currentUser = auth.currentUser
+        val biometricLockForCurrentUser = currentUser != null &&
+            preferences.getBoolean("biometric_enabled", false) &&
+            preferences.getString("biometric_uid", null) == currentUser.uid
+        if (biometricLockForCurrentUser) {
             notice = "افتح جلستك بالبصمة أولًا؛ وضع الزائر لا يتجاوز قفل الحساب"
             return
         }
@@ -382,7 +350,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearNotice() { notice = null }
 
-    private fun findFragmentActivity(context: Context): FragmentActivity? {
+    private fun findFragmentActivity(context: Context): android.app.Activity? {
         var current: Context? = context
         while (current != null) {
             if (current is FragmentActivity) return current
