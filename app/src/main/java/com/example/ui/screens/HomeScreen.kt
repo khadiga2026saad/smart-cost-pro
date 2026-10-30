@@ -1,5 +1,15 @@
 package com.example.ui.screens
 
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import androidx.compose.material3.Switch
+import androidx.compose.ui.platform.LocalContext
+import com.google.firebase.auth.FirebaseAuth
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -198,6 +208,93 @@ fun HomeScreen(
     var tickerTextState by remember { mutableStateOf("✦ SMART COST PRO • نظام المراقبة المالية • تابع بيانات التكاليف من أفرع القسم • ") }
     var colorThemeState by remember { mutableStateOf("ذهبي ملكي") }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    val appContext = LocalContext.current
+    val authPreferences = remember(appContext) {
+        appContext.getSharedPreferences("smart_cost_auth_prefs", Context.MODE_PRIVATE)
+    }
+    val signedInUser = FirebaseAuth.getInstance().currentUser
+    var biometricEnabled by remember {
+        mutableStateOf(
+            signedInUser != null &&
+                authPreferences.getBoolean("biometric_enabled", false) &&
+                authPreferences.getString("biometric_uid", null) == signedInUser.uid
+        )
+    }
+    var biometricNotice by remember { mutableStateOf<String?>(null) }
+
+    fun changeBiometricSetting(enable: Boolean) {
+        if (!enable) {
+            authPreferences.edit().putBoolean("biometric_enabled", false).remove("biometric_uid").apply()
+            biometricEnabled = false
+            biometricNotice = "تم إيقاف الدخول بالبصمة. لم يتم حذف الحساب أو بياناته."
+            return
+        }
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null || user.isAnonymous || !user.isEmailVerified) {
+            biometricNotice = "سجّل الدخول بحساب موثّق أولًا لتفعيل البصمة."
+            biometricEnabled = false
+            return
+        }
+        val activity = appContext.findFragmentActivity()
+        if (activity == null) {
+            biometricNotice = "تعذر فتح نافذة التحقق على هذا الجهاز."
+            return
+        }
+        val availability = BiometricManager.from(activity)
+            .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+        if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
+            biometricNotice = when (availability) {
+                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "أضف بصمة أو وسيلة تعرف حيوي من إعدادات أمان الهاتف أولًا."
+                BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> "هذا الجهاز لا يدعم التحقق الحيوي."
+                else -> "التحقق الحيوي غير متاح حاليًا."
+            }
+            biometricEnabled = false
+            return
+        }
+        val expectedUid = user.uid
+        val prompt = BiometricPrompt(
+            activity,
+            ContextCompat.getMainExecutor(activity),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    val current = FirebaseAuth.getInstance().currentUser
+                    if (current != null && current.uid == expectedUid &&
+                        !current.isAnonymous && current.isEmailVerified) {
+                        authPreferences.edit().putBoolean("biometric_enabled", true)
+                            .putString("biometric_uid", expectedUid).apply()
+                        biometricEnabled = true
+                        biometricNotice = "تم تفعيل الدخول بالبصمة لهذا الحساب."
+                    } else {
+                        biometricEnabled = false
+                        biometricNotice = "تغيّر الحساب؛ لم يتم تفعيل البصمة."
+                    }
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    biometricEnabled = false
+                    biometricNotice = if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+                        errorCode == BiometricPrompt.ERROR_USER_CANCELED) {
+                        "تم إلغاء تفعيل البصمة."
+                    } else {
+                        "تعذر التحقق: $errString"
+                    }
+                }
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    biometricNotice = "لم تتطابق البصمة؛ حاول مرة أخرى."
+                }
+            }
+        )
+        prompt.authenticate(
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle("تفعيل الدخول بالبصمة")
+                .setSubtitle("أكد هويتك لتفعيل الدخول السريع لهذا الحساب")
+                .setNegativeButtonText("إلغاء")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                .build()
+        )
+    }
     var showMenu by remember { mutableStateOf(false) }
 
     val themeAccentColor = remember(colorThemeState) {
@@ -386,6 +483,9 @@ fun HomeScreen(
                 currentUserRole = userRoleState,
                 tickerText = tickerTextState,
                 currentColorTheme = colorThemeState,
+                biometricEnabled = biometricEnabled,
+                biometricNotice = biometricNotice,
+                onBiometricChange = { changeBiometricSetting(it) },
                 onSaveSettings = { newName, newRole, newTicker, newTheme ->
                     userNameState = newName
                     userRoleState = newRole
@@ -1723,6 +1823,9 @@ fun SettingsDialog(
     currentUserRole: String,
     tickerText: String,
     currentColorTheme: String = "ذهبي ملكي",
+    biometricEnabled: Boolean = false,
+    biometricNotice: String? = null,
+    onBiometricChange: (Boolean) -> Unit = {},
     onSaveSettings: (newName: String, newRole: String, newTicker: String, newTheme: String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -1751,6 +1854,29 @@ fun SettingsDialog(
                     "تخصيص بيانات الحساب، ألوان الواجهة، وشريط الأخبار المتحرك.",
                     style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryDark)
                 )
+
+                Text("الأمان:", fontWeight = FontWeight.Bold, color = DeepSlate, fontSize = 12.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth().testTag("biometric_setting_row"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("تفعيل الدخول بالبصمة", fontWeight = FontWeight.SemiBold, color = DeepSlate)
+                        Text(
+                            "يتطلب حسابًا موثّقًا وجلسة محفوظة على هذا الجهاز.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryDark)
+                        )
+                    }
+                    Switch(
+                        checked = biometricEnabled,
+                        onCheckedChange = onBiometricChange,
+                        modifier = Modifier.testTag("biometric_enabled_switch")
+                    )
+                }
+                if (biometricNotice != null) {
+                    Text(biometricNotice, style = MaterialTheme.typography.bodySmall, color = GoldDark)
+                }
 
                 Text("بيانات الحساب:", fontWeight = FontWeight.Bold, color = DeepSlate, fontSize = 12.sp)
                 OutlinedTextField(
@@ -1856,4 +1982,14 @@ fun HomeScreenPreview() {
             )
         }
     }
+}
+
+
+private fun Context.findFragmentActivity(): FragmentActivity? {
+    var current: Context = this
+    while (current is ContextWrapper) {
+        if (current is FragmentActivity) return current
+        current = current.baseContext
+    }
+    return current as? FragmentActivity
 }
