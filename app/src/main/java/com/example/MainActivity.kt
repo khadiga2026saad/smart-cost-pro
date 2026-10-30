@@ -176,6 +176,16 @@ fun SmartCostProApp(
     var triggerAddExpense by remember { mutableStateOf(false) }
     var triggerAddRevenue by remember { mutableStateOf(false) }
 
+    // All explicit exits use the same cleanup path so a stale guest flag cannot
+    // reopen the workspace after the app is restarted.
+    fun leaveWorkspace() {
+        FirebaseAuth.getInstance().signOut()
+        authPrefs.edit().putBoolean("guest_mode", false).apply()
+        isInWorkspace = false
+        showingCostCategories = false
+        currentScreen = Screen.DASHBOARD
+    }
+
     if (!isInWorkspace) {
         // شاشة الدخول المعتمدة
         LoginScreen(
@@ -225,7 +235,7 @@ fun SmartCostProApp(
                     }
                 },
                 onAddNewCategory = { /* Requires approved category persistence before activation. */ },
-                onLogout = { FirebaseAuth.getInstance().signOut(); isInWorkspace = false; showingCostCategories = false }
+                onLogout = { leaveWorkspace() }
             )
         } else if (currentScreen == Screen.DASHBOARD) {
             HomeScreen(
@@ -253,14 +263,11 @@ fun SmartCostProApp(
                             currentScreen = Screen.REPORTS
                         }
                         "settings_backup" -> {
-                            isInWorkspace = false
+                            leaveWorkspace()
                         }
                     }
                 },
-                onLogout = {
-                    FirebaseAuth.getInstance().signOut()
-                    isInWorkspace = false
-                },
+                onLogout = { leaveWorkspace() },
                 modifier = modifier
             )
         } else {
@@ -298,10 +305,7 @@ fun SmartCostProApp(
                             onSearchClick = { showSearchDialog = true },
                             onVoiceClick = { showVoiceDialog = true },
                             onSettingsClick = { },
-                            onLogout = {
-                                FirebaseAuth.getInstance().signOut()
-                                isInWorkspace = false
-                            },
+                            onLogout = { leaveWorkspace() },
                             onHomeClick = { currentScreen = Screen.DASHBOARD }
                         )
 
