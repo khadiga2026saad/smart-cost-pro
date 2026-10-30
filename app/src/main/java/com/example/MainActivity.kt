@@ -138,24 +138,31 @@ fun SmartCostProApp(
     // Keep the Firebase session, but require biometric verification on a fresh app launch
     // when the user opted in to biometric unlock on this device.
     val appContext = LocalContext.current
-    val biometricEnabled = remember {
+    val authPrefs = remember {
         appContext.getSharedPreferences("smart_cost_auth_prefs", android.content.Context.MODE_PRIVATE)
-            .getBoolean("biometric_enabled", false)
     }
+    fun biometricEnabledFor(user: com.google.firebase.auth.FirebaseUser?): Boolean =
+        user != null &&
+            authPrefs.getBoolean("biometric_enabled", false) &&
+            authPrefs.getString("biometric_uid", null) == user.uid
     var isInWorkspace by remember {
-        mutableStateOf(FirebaseAuth.getInstance().currentUser?.let { (it.isEmailVerified || it.isAnonymous) && !biometricEnabled } == true)
+        mutableStateOf(
+            FirebaseAuth.getInstance().currentUser?.let { user ->
+                !user.isAnonymous && user.isEmailVerified && !biometricEnabledFor(user)
+            } == true ||
+                (authPrefs.getBoolean("guest_mode", false) && FirebaseAuth.getInstance().currentUser == null)
+        )
     }
 
     // Re-lock the workspace when the app returns from the background, if biometrics are enabled.
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, biometricEnabled) {
+    DisposableEffect(lifecycleOwner) {
         var hasGoneToBackground = false
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 hasGoneToBackground = true
-            } else if (event == Lifecycle.Event.ON_START && hasGoneToBackground &&
-                biometricEnabled && FirebaseAuth.getInstance().currentUser != null) {
-                isInWorkspace = false
+            } else if (event == Lifecycle.Event.ON_START && hasGoneToBackground) {
+                if (biometricEnabledFor(FirebaseAuth.getInstance().currentUser)) isInWorkspace = false
                 hasGoneToBackground = false
             }
         }
@@ -173,11 +180,18 @@ fun SmartCostProApp(
         // شاشة الدخول المعتمدة
         LoginScreen(
             onLoginClick = {
-                isInWorkspace = FirebaseAuth.getInstance().currentUser?.let { it.isEmailVerified || it.isAnonymous } == true
-                currentScreen = Screen.DASHBOARD
-                showingCostCategories = false
+                val user = FirebaseAuth.getInstance().currentUser
+                val canEnter = user != null && !user.isAnonymous && user.isEmailVerified
+                authPrefs.edit().putBoolean("guest_mode", false).apply()
+                isInWorkspace = canEnter && !biometricEnabledFor(user)
+                if (isInWorkspace) {
+                    currentScreen = Screen.DASHBOARD
+                    showingCostCategories = false
+                }
             },
             onGuestClick = {
+                FirebaseAuth.getInstance().signOut()
+                authPrefs.edit().putBoolean("guest_mode", true).apply()
                 isInWorkspace = true
                 currentScreen = Screen.DASHBOARD
                 showingCostCategories = false
