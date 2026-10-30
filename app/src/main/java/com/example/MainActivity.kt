@@ -183,7 +183,7 @@ fun SmartCostProApp(
                 val user = FirebaseAuth.getInstance().currentUser
                 val canEnter = user != null && !user.isAnonymous && user.isEmailVerified
                 authPrefs.edit().putBoolean("guest_mode", false).apply()
-                isInWorkspace = canEnter && !biometricEnabledFor(user)
+                isInWorkspace = canEnter
                 if (isInWorkspace) {
                     currentScreen = Screen.DASHBOARD
                     showingCostCategories = false
